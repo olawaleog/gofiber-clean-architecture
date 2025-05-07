@@ -6,8 +6,10 @@ import (
 )
 
 type TransactionService interface {
-	Create(ctx context.Context, model model.TransactionCreateUpdateModel) model.TransactionCreateUpdateModel
-	Delete(ctx context.Context, id string)
-	FindById(ctx context.Context, id string) model.TransactionModel
-	FindAll(ctx context.Context) []model.TransactionModel
+	InitiateMobileMoneyTransaction(ctx context.Context, request model.MobileMoneyRequestModel) interface{}
+	PaymentStatus(ctx context.Context, id string) model.TransactionStatusModel
+	GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error)
+	GetRefineryOrders(ctx context.Context, u uint) ([]model.OrderModel, error)
+	ApproveOrRejectOrder(ctx context.Context, orderModel model.ApproveOrRejectOrderModel) (interface{}, error)
+	GetDriverPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel
 }

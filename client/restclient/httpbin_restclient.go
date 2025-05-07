@@ -4,30 +4,36 @@ import (
 	"context"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 )
 
-func NewHttpBinRestClient() client.HttpBinClient {
-	return &HttpBinRestClient{}
+func NewHttpRestClient(config configuration.Config) client.HttpClient {
+	return &RestClient{config}
 }
 
-type HttpBinRestClient struct {
+type RestClient struct {
+	configuration.Config
 }
 
-func (h HttpBinRestClient) PostMethod(ctx context.Context, requestBody *model.HttpBin, response *map[string]interface{}) {
+func (h RestClient) Send(ctx context.Context, url string, method string, requestBody *map[string]interface{}, hd *map[string]interface{}, isForm bool) map[string]interface{} {
 	var headers []common.HttpHeader
-	headers = append(headers, common.HttpHeader{Key: "X-Key", Value: "123456"})
-
-	httpClient := common.ClientComponent[model.HttpBin, map[string]interface{}]{
-		HttpMethod:     "POST",
-		UrlApi:         "https://httpbin.org/post",
+	for key, value := range *hd {
+		headers = append(headers, common.HttpHeader{Key: key, Value: value.(string)})
+	}
+	response := make(map[string]interface{})
+	//headers = append(headers, common.HttpHeader{Key: "Authorization", Value: "Bearer " + h.Config.Get("PAYSTACK_SECRET_KEY")})
+	httpClient := common.ClientComponent[map[string]interface{}, map[string]interface{}]{
+		HttpMethod:     method,
+		UrlApi:         url,
 		RequestBody:    requestBody,
-		ResponseBody:   response,
+		ResponseBody:   &response,
 		Headers:        headers,
-		ConnectTimeout: 30000,
-		ActiveTimeout:  30000,
+		ConnectTimeout: 60000,
+		ActiveTimeout:  60000,
+		IsFormData:     isForm,
 	}
 	err := httpClient.Execute(ctx)
 	exception.PanicLogging(err)
+	return *httpClient.ResponseBody
 }

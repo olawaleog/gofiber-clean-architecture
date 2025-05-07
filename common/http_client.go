@@ -5,11 +5,13 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"io"
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"reflect"
 	"time"
 )
@@ -27,6 +29,7 @@ type ClientComponent[T any, E any] struct {
 	Headers        []HttpHeader
 	RequestBody    *T
 	ResponseBody   *E
+	IsFormData     bool
 }
 
 func (c *ClientComponent[T, E]) Execute(ctx context.Context) error {
@@ -55,15 +58,35 @@ func (c *ClientComponent[T, E]) Execute(ctx context.Context) error {
 
 		//logging request body
 		NewLogger().Info("Request Body ", string(requestBody))
-
-		requestBodyByte := bytes.NewBuffer(requestBody)
+		var requestBodyByte *bytes.Buffer
+		if c.IsFormData {
+			formData := url.Values{}
+			if requestBodyMap, ok := any(c.RequestBody).(*map[string]interface{}); ok {
+				for key, value := range *requestBodyMap {
+					if strValue, ok := value.(string); ok {
+						formData.Set(key, strValue)
+					}
+				}
+			} else {
+				return fmt.Errorf("RequestBody is not of type *map[string]interface{}")
+			}
+			requestBodyByte = bytes.NewBufferString(formData.Encode())
+		} else {
+			requestBodyByte = bytes.NewBuffer(requestBody)
+		}
 
 		request, err = http.NewRequestWithContext(ctx, c.HttpMethod, c.UrlApi, requestBodyByte)
+		if c.IsFormData {
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		} else {
+			request.Header.Set("Content-Type", "application/json")
+		}
+		request.Header.Set("Accept", "application/json")
 		exception.PanicLogging(err)
 	}
 
 	//set header
-	request.Header.Set("Content-Type", "application/json")
 	for _, header := range c.Headers {
 		request.Header.Set(header.Key, header.Value)
 	}
@@ -87,7 +110,7 @@ func (c *ClientComponent[T, E]) Execute(ctx context.Context) error {
 
 	responseBody, err := io.ReadAll(response.Body)
 	exception.PanicLogging(err)
-
+	NewLogger().Info("Response Body ", string(responseBody))
 	err = json.Unmarshal(responseBody, &c.ResponseBody)
 	exception.PanicLogging(err)
 
@@ -95,7 +118,6 @@ func (c *ClientComponent[T, E]) Execute(ctx context.Context) error {
 	NewLogger().Info("Response Header ", response.Header)
 	NewLogger().Info("Response Http Status ", response.Status)
 	NewLogger().Info("Response Http Version ", response.Proto)
-	NewLogger().Info("Response Body ", string(responseBody))
 
 	return nil
 }

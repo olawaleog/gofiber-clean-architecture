@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  model.ChangePasswordModel:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
   model.GeneralResponse:
     properties:
       code:
@@ -7,65 +14,43 @@ definitions:
       data: {}
       message:
         type: string
+      success:
+        type: boolean
     type: object
-  model.ProductCreateOrUpdateModel:
+  model.LoginModel:
     properties:
-      name:
+      password:
         type: string
-      price:
-        type: integer
-      quantity:
-        type: integer
-    required:
-    - name
-    - price
-    - quantity
-    type: object
-  model.ProductModel:
-    properties:
-      id:
+      username:
         type: string
-      name:
-        type: string
-      price:
-        type: integer
-      quantity:
-        type: integer
-    type: object
-  model.TransactionCreateUpdateModel:
-    properties:
-      id:
-        type: string
-      total_price:
-        type: integer
-      transaction_details:
-        items:
-          $ref: '#/definitions/model.TransactionDetailCreateUpdateModel'
-        type: array
-    type: object
-  model.TransactionDetailCreateUpdateModel:
-    properties:
-      id:
-        type: string
-      price:
-        type: integer
-      product:
-        $ref: '#/definitions/model.ProductModel'
-      product_id:
-        type: string
-      quantity:
-        type: integer
-      sub_total_price:
-        type: integer
-    required:
-    - price
-    - product_id
-    - quantity
-    - sub_total_price
     type: object
   model.UserModel:
     properties:
+      city:
+        type: string
+      emailAddress:
+        type: string
+      fileName:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: integer
+      isActive:
+        type: boolean
+      lastName:
+        type: string
       password:
+        type: string
+      phoneNumber:
+        type: string
+      postalCode:
+        type: string
+      region:
+        type: string
+      role:
+        type: string
+      street:
         type: string
       username:
         type: string
@@ -94,7 +79,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.UserModel'
+          $ref: '#/definitions/model.LoginModel'
       produces:
       - application/json
       responses:
@@ -105,34 +90,18 @@ paths:
       summary: authenticate user
       tags:
       - Authenticate user
-  /v1/api/product:
-    get:
-      consumes:
-      - application/json
-      description: Get all exists products.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: get all exists products
-      tags:
-      - Product
+  /v1/api/change-pasword:
     post:
       consumes:
       - application/json
-      description: create product.
+      description: change password.
       parameters:
       - description: Request Body
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.ProductCreateOrUpdateModel'
+          $ref: '#/definitions/model.ChangePasswordModel'
       produces:
       - application/json
       responses:
@@ -142,110 +111,21 @@ paths:
             $ref: '#/definitions/model.GeneralResponse'
       security:
       - JWT: []
-      summary: create product
+      summary: change password
       tags:
-      - Product
-  /v1/api/product/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: delete one exists product.
-      parameters:
-      - description: Product Id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: delete one exists product
-      tags:
-      - Product
-    get:
-      consumes:
-      - application/json
-      description: Get one exists product.
-      parameters:
-      - description: Product Id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: get one exists product
-      tags:
-      - Product
-    put:
-      consumes:
-      - application/json
-      description: update one exists product.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/model.ProductCreateOrUpdateModel'
-      - description: Product Id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: update one exists product
-      tags:
-      - Product
-  /v1/api/transaction:
-    get:
-      consumes:
-      - application/json
-      description: Get all exists transaction.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: get all exists transaction
-      tags:
-      - Transaction
+      - Authenticate user
+  /v1/api/register:
     post:
       consumes:
       - application/json
-      description: create transaction.
+      description: register new user.
       parameters:
       - description: Request Body
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/model.TransactionCreateUpdateModel'
+          $ref: '#/definitions/model.UserModel'
       produces:
       - application/json
       responses:
@@ -253,11 +133,9 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: create transaction
+      summary: register user
       tags:
-      - Transaction
+      - Authenticate user
   /v1/api/transaction-detail/{id}:
     get:
       consumes:
@@ -281,39 +159,9 @@ paths:
       summary: get one exists transaction detail
       tags:
       - Transaction Detail
-  /v1/api/transaction/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: delete one exists transaction.
-      parameters:
-      - description: Transaction Id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.GeneralResponse'
-      security:
-      - JWT: []
-      summary: delete one exists transaction
-      tags:
-      - Transaction
+  /v1/api/users:
     get:
-      consumes:
-      - application/json
-      description: Get one exists transaction.
-      parameters:
-      - description: Transaction Id
-        in: path
-        name: id
-        required: true
-        type: string
+      description: list users.
       produces:
       - application/json
       responses:
@@ -323,9 +171,9 @@ paths:
             $ref: '#/definitions/model.GeneralResponse'
       security:
       - JWT: []
-      summary: get one exists transaction
+      summary: list users
       tags:
-      - Transaction
+      - Authenticate user
 schemes:
 - http
 - https

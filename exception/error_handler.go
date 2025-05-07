@@ -2,17 +2,20 @@ package exception
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/gofiber/fiber/v2"
 )
 
 func ErrorHandler(ctx *fiber.Ctx, err error) error {
+	fmt.Println(err)
 	_, validationError := err.(ValidationError)
 	if validationError {
 		data := err.Error()
 		var messages []map[string]interface{}
 
 		errJson := json.Unmarshal([]byte(data), &messages)
+
 		PanicLogging(errJson)
 		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
 			Code:    400,
@@ -39,9 +42,18 @@ func ErrorHandler(ctx *fiber.Ctx, err error) error {
 		})
 	}
 
+	_, badRequest := err.(BadRequestError)
+	if badRequest {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    400,
+			Message: "Bad Request",
+			Data:    err.Error(),
+		})
+	}
+
 	return ctx.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
 		Code:    500,
-		Message: "General Error",
+		Message: err.Error(),
 		Data:    err.Error(),
 	})
 }

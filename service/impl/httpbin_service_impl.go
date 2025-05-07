@@ -4,23 +4,26 @@ import (
 	"context"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 )
 
-func NewHttpBinServiceImpl(httpBinClient *client.HttpBinClient) service.HttpBinService {
-	return &httpBinServiceImpl{HttpBinClient: *httpBinClient}
+func NewHttpBinServiceImpl(httpBinClient *client.HttpClient) service.HttpService {
+	return &httpBinServiceImpl{HttpClient: *httpBinClient}
 }
 
 type httpBinServiceImpl struct {
-	client.HttpBinClient
+	client.HttpClient
 }
 
-func (h *httpBinServiceImpl) PostMethod(ctx context.Context) {
-	httpBin := model.HttpBin{
-		Name: "rizki",
-	}
-	var response map[string]interface{}
-	h.HttpBinClient.PostMethod(ctx, &httpBin, &response)
+//
+//func (h httpBinServiceImpl) PostMethod(ctx context.Context, url, method string, body, response *map[string]interface{}) map[string]interface{} {
+//	//TODO implement me
+//	panic("implement me")
+//}
+
+func (h *httpBinServiceImpl) PostMethod(ctx context.Context, url string, method string, body *map[string]interface{}, header *map[string]interface{}, isForm bool) map[string]interface{} {
+
+	response := h.HttpClient.Send(ctx, url, method, body, header, isForm)
 	common.NewLogger().Info("log response service ", response)
+	return response
 }

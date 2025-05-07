@@ -2,116 +2,275 @@ package impl
 
 import (
 	"context"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"encoding/json"
+	"errors"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
-	"github.com/google/uuid"
+	"time"
 )
 
-func NewTransactionServiceImpl(transactionRepository *repository.TransactionRepository) service.TransactionService {
-	return &transactionServiceImpl{TransactionRepository: *transactionRepository}
+func NewTransactionServiceImpl(transactionRepository *repository.TransactionRepository, orderRepo *repository.OrderRepository, client *service.HttpService, config configuration.Config) service.TransactionService {
+	return &transactionServiceImpl{TransactionRepository: *transactionRepository, HttpService: *client, Config: config, OrderRepository: *orderRepo}
 }
 
 type transactionServiceImpl struct {
 	repository.TransactionRepository
+	repository.OrderRepository
+	service.HttpService
+	configuration.Config
 }
 
-func (transactionService *transactionServiceImpl) Create(ctx context.Context, transactionModel model.TransactionCreateUpdateModel) model.TransactionCreateUpdateModel {
-	common.Validate(transactionModel)
-	uuidGenerate := uuid.New()
-	var transactionDetails []entity.TransactionDetail
-	var totalPrice int64 = 0
-
-	for _, detail := range transactionModel.TransactionDetails {
-		totalPrice = totalPrice + detail.SubTotalPrice
-		transactionDetails = append(transactionDetails, entity.TransactionDetail{
-			TransactionId: uuidGenerate,
-			ProductId:     detail.ProductId,
-			Id:            uuid.New(),
-			SubTotalPrice: detail.SubTotalPrice,
-			Price:         detail.Price,
-			Quantity:      detail.Quantity,
-		})
+func (t transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel {
+	orders, err := t.OrderRepository.FindDriverOrdersByUserId(ctx, userId, stage)
+	exception.PanicLogging(err)
+	if orders == nil {
+		return nil
 	}
-
-	transaction := entity.Transaction{
-		Id:                 uuid.New(),
-		TotalPrice:         totalPrice,
-		TransactionDetails: transactionDetails,
-	}
-
-	transactionService.TransactionRepository.Insert(ctx, transaction)
-	return transactionModel
-}
-
-func (transactionService *transactionServiceImpl) Delete(ctx context.Context, id string) {
-	transaction, err := transactionService.TransactionRepository.FindById(ctx, id)
-	if err != nil {
-		panic(exception.NotFoundError{
-			Message: err.Error(),
-		})
-	}
-	transactionService.TransactionRepository.Delete(ctx, transaction)
-}
-
-func (transactionService *transactionServiceImpl) FindById(ctx context.Context, id string) model.TransactionModel {
-	transaction, err := transactionService.TransactionRepository.FindById(ctx, id)
-	if err != nil {
-		panic(exception.NotFoundError{
-			Message: err.Error(),
-		})
-	}
-	var transactionDetails []model.TransactionDetailModel
-	for _, detail := range transaction.TransactionDetails {
-		transactionDetails = append(transactionDetails, model.TransactionDetailModel{
-			Id:            detail.Id.String(),
-			SubTotalPrice: detail.SubTotalPrice,
-			Price:         detail.Price,
-			Quantity:      detail.Quantity,
-			Product: model.ProductModel{
-				Id:       detail.Product.Id.String(),
-				Name:     detail.Product.Name,
-				Price:    detail.Product.Price,
-				Quantity: detail.Product.Quantity,
+	var orderModels []model.OrderModel
+	for _, order := range orders {
+		orderModels = append(orderModels, model.OrderModel{
+			Id:          order.ID,
+			Amount:      order.Amount,
+			Currency:    order.Currency,
+			WaterCost:   order.WaterCost,
+			DeliveryFee: order.DeliveryFee,
+			RefineryId:  order.RefineryId,
+			Capacity:    order.Capacity,
+			Transaction: model.TransactionModel{
+				ID:          order.Transaction.ID,
+				Email:       order.Transaction.Email,
+				PhoneNumber: order.Transaction.PhoneNumber,
+				Amount:      order.Transaction.Amount,
+				Currency:    order.Transaction.Currency,
+				PaymentID:   order.Transaction.PaymentID,
+				Provider:    order.Transaction.Provider,
+				PaymentType: order.Transaction.PaymentType,
+				Status:      order.Transaction.Status,
+				RawRequest:  order.Transaction.RawRequest,
+				RawResponse: order.Transaction.RawResponse,
+				Reference:   order.Transaction.Reference,
+				DeliveryFee: order.Transaction.DeliveryFee,
+				WaterCost:   order.Transaction.WaterCost,
+			},
+			DeliveryAddress: order.DeliveryAddress,
+			DeliveryPlaceId: order.DeliveryPlaceId,
+			Status:          order.Status,
+			TransactionId:   order.TransactionId,
+			TruckId:         order.TruckId,
+			CreatedAt:       order.CreatedAt,
+			RefineryAddress: order.RefineryAddress,
+			RefineryPlaceId: order.RefineryPlaceId,
+			Refinery: model.RefineryModel{
+				Id:      order.RefineryId,
+				Name:    order.Refinery.Name,
+				Email:   order.Refinery.Email,
+				Phone:   order.Refinery.Phone,
+				Address: order.Refinery.Address,
+				Region:  order.Refinery.Region,
+				PlaceId: order.Refinery.PlaceId,
+			},
+			User: model.UserModel{
+				Username:     order.Transaction.User.Username,
+				EmailAddress: order.Transaction.User.Email,
+				PhoneNumber:  order.Transaction.User.PhoneNumber,
+				FirstName:    order.Transaction.User.FirstName,
+				LastName:     order.Transaction.User.LastName,
 			},
 		})
-	}
 
-	return model.TransactionModel{
-		Id:                 transaction.Id.String(),
-		TotalPrice:         transaction.TotalPrice,
-		TransactionDetails: transactionDetails,
 	}
+	return orderModels
 }
 
-func (transactionService *transactionServiceImpl) FindAll(ctx context.Context) (responses []model.TransactionModel) {
-	transactions := transactionService.TransactionRepository.FindAll(ctx)
-	for _, transaction := range transactions {
-		var transactionDetails []model.TransactionDetailModel
-		for _, detail := range transaction.TransactionDetails {
-			transactionDetails = append(transactionDetails, model.TransactionDetailModel{
-				Id:            detail.Id.String(),
-				SubTotalPrice: detail.SubTotalPrice,
-				Price:         detail.Price,
-				Quantity:      detail.Quantity,
-				Product: model.ProductModel{
-					Id:       detail.Product.Id.String(),
-					Name:     detail.Product.Name,
-					Price:    detail.Product.Price,
-					Quantity: detail.Product.Quantity,
-				},
-			})
-		}
+func (t transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, orderModel model.ApproveOrRejectOrderModel) (interface{}, error) {
+	order, err := t.OrderRepository.FindById(ctx, orderModel.OrderId)
+	exception.PanicLogging(err)
 
-		responses = append(responses, model.TransactionModel{
-			Id:                 transaction.Id.String(),
-			TotalPrice:         transaction.TotalPrice,
-			TransactionDetails: transactionDetails,
+	if order.ID == 0 {
+		return nil, exception.BadRequestError{
+			Message: "Order not found",
+		}
+	}
+
+	if orderModel.Action == "approve" {
+		order.Status += 1
+		if orderModel.TruckId != 0 {
+			order.TruckId = orderModel.TruckId
+		}
+	} else {
+		order.Status -= 1
+	}
+
+	err = t.OrderRepository.Update(ctx, order)
+	exception.PanicLogging(err)
+
+	return order, nil
+}
+
+func (t transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) ([]model.OrderModel, error) {
+	orders, err := t.OrderRepository.GetRefineryOrders(ctx, u)
+	exception.PanicLogging(err)
+	if orders == nil {
+		return nil, exception.BadRequestError{
+			Message: "Refinery not found",
+		}
+	}
+	var orderModels []model.OrderModel
+	for _, order := range orders {
+		orderModels = append(orderModels, model.OrderModel{
+			Id:          order.ID,
+			Amount:      order.Amount,
+			Currency:    order.Currency,
+			WaterCost:   order.WaterCost,
+			DeliveryFee: order.DeliveryFee,
+			RefineryId:  order.RefineryId,
+			Capacity:    order.Capacity,
+			Transaction: model.TransactionModel{
+				ID:          order.Transaction.ID,
+				Email:       order.Transaction.Email,
+				PhoneNumber: order.Transaction.PhoneNumber,
+				Amount:      order.Transaction.Amount,
+				Currency:    order.Transaction.Currency,
+				PaymentID:   order.Transaction.PaymentID,
+				Provider:    order.Transaction.Provider,
+				PaymentType: order.Transaction.PaymentType,
+				Status:      order.Transaction.Status,
+				RawRequest:  order.Transaction.RawRequest,
+				RawResponse: order.Transaction.RawResponse,
+				Reference:   order.Transaction.Reference,
+				DeliveryFee: order.Transaction.DeliveryFee,
+				WaterCost:   order.Transaction.WaterCost,
+			},
+			DeliveryAddress: order.DeliveryAddress,
+			RefineryAddress: order.RefineryAddress,
+			Status:          order.Status,
+			TransactionId:   order.TransactionId,
+			TruckId:         order.TruckId,
+			CreatedAt:       order.CreatedAt,
 		})
 	}
 
-	return responses
+	return orderModels, nil
+}
+
+func (t transactionServiceImpl) PaymentStatus(ctx context.Context, id string) model.TransactionStatusModel {
+	transaction, err := t.TransactionRepository.FindByReference(ctx, id)
+	exception.PanicLogging(err)
+
+	if transaction.ID == 0 {
+
+		exception.PanicLogging(errors.New("transaction does not exist"))
+	}
+	header := make(map[string]interface{})
+	header["Authorization"] = "Bearer " + t.Config.Get("PAYSTACK_SECRET_KEY")
+	paystackUrl := t.Config.Get("PAYSTACK_BASE_URL")
+	response := t.HttpService.PostMethod(ctx, paystackUrl+"/transaction/verify/"+transaction.Reference, "GET", &map[string]interface{}{}, &header, false)
+	jsn, err := json.Marshal(response)
+	exception.PanicLogging(err)
+
+	transactionStatus := GetTransactionStatus(string(jsn))
+	transaction.Status = transactionStatus.Data.Status
+	transaction.RawResponse = string(jsn)
+	transaction.UpdatedAt = time.Now()
+	err = t.TransactionRepository.Update(ctx, transaction)
+	exception.PanicLogging(err)
+
+	if transactionStatus.Data.Status == "success" {
+		order, _ := t.OrderRepository.FindByTransactionId(ctx, transaction.ID)
+		var request model.MobileMoneyRequestModel
+		err := json.Unmarshal([]byte(transaction.RawRequest), &request)
+		exception.PanicLogging(err)
+
+		if order.ID == 0 {
+			order = entity.Order{
+				TransactionId: transaction.ID,
+				//UserId:          transaction.UserId,
+				Amount:          transaction.Amount,
+				Currency:        transaction.Currency,
+				WaterCost:       transaction.WaterCost,
+				DeliveryFee:     transaction.DeliveryFee,
+				DeliveryAddress: request.CustomerAddress,
+				DeliveryPlaceId: request.CustomerPlaceId,
+				RefineryAddress: request.RefineryAddress,
+				RefineryPlaceId: request.RefineryPlaceId,
+				RefineryId:      request.RefineryId,
+				Capacity:        request.Capacity,
+			}
+			order = t.OrderRepository.Insert(ctx, order)
+		}
+	}
+
+	return transactionStatus
+}
+
+func (t transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Context, request model.MobileMoneyRequestModel) interface{} {
+	//amount, err := strconv.ParseFloat(request.Amount, 64)
+	//exception.PanicLogging(err)
+	rawRequest, err := json.Marshal(request)
+	exception.PanicLogging(err)
+	transaction := entity.Transaction{
+		Email:       request.EmailAddress,
+		PhoneNumber: request.PhoneNumber,
+		Amount:      request.Amount,
+		Currency:    request.Currency,
+		UserId:      request.UserId,
+		PaymentID:   request.PhoneNumber,
+		Provider:    request.Provider,
+		PaymentType: "mobile-money",
+		Status:      "Initiated",
+		RawRequest:  string(rawRequest),
+		WaterCost:   request.WaterCost,
+		DeliveryFee: request.DeliveryFee,
+	}
+	transaction = t.TransactionRepository.Insert(ctx, transaction)
+
+	mobileMoney := make(map[string]interface{})
+	mobileMoney["phone"] = request.PhoneNumber
+	mobileMoney["provider"] = request.Provider
+
+	data := make(map[string]interface{})
+	data["amount"] = int(request.Amount * 100)
+	data["email"] = request.EmailAddress
+	data["currency"] = request.Currency
+	data["mobile_money"] = mobileMoney
+	paystackUrl := t.Config.Get("PAYSTACK_BASE_URL")
+
+	header := make(map[string]interface{})
+	header["Authorization"] = "Bearer " + t.Config.Get("PAYSTACK_SECRET_KEY")
+
+	response := t.HttpService.PostMethod(ctx, paystackUrl+"/charge", "POST", &data, &header, false)
+	jsn, err := json.Marshal(response)
+	transactionStatus := GetTransactionStatus(string(jsn))
+	transactionStatus.Data.TransactionId = transaction.ID
+	transaction.Status = transactionStatus.Data.Status
+	transaction.RawResponse = string(jsn)
+	transaction.UpdatedAt = time.Now()
+	transaction.Reference = transactionStatus.Data.Reference
+	err = t.TransactionRepository.Update(ctx, transaction)
+	exception.PanicLogging(err)
+
+	return transactionStatus
+}
+
+func GetTransactionStatus(data string) model.TransactionStatusModel {
+	var transactionStatus model.TransactionStatusModel
+	err := json.Unmarshal([]byte(data), &transactionStatus)
+	exception.PanicLogging(err)
+	return transactionStatus
+}
+
+func (r transactionServiceImpl) GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error) {
+	refineryData, err := r.TransactionRepository.GetRefineryDashboardData(ctx, u)
+	exception.PanicLogging(err)
+	if refineryData == nil {
+		return nil, exception.BadRequestError{
+			Message: "Refinery not found",
+		}
+	}
+
+	return refineryData, nil
 }

@@ -17,6 +17,15 @@ type transactionRepositoryImpl struct {
 	*gorm.DB
 }
 
+func (transactionRepository *transactionRepositoryImpl) FindByReference(ctx context.Context, id string) (entity.Transaction, error) {
+	var transaction entity.Transaction
+	result := transactionRepository.DB.Where("id = ?", id).First(&transaction)
+	if result.RowsAffected == 0 {
+		return entity.Transaction{}, errors.New("transaction Not Found")
+	}
+	return transaction, nil
+}
+
 func (transactionRepository *transactionRepositoryImpl) Insert(ctx context.Context, transaction entity.Transaction) entity.Transaction {
 	err := transactionRepository.DB.WithContext(ctx).Create(&transaction).Error
 	exception.PanicLogging(err)
@@ -55,4 +64,43 @@ func (transactionRepository *transactionRepositoryImpl) FindAll(ctx context.Cont
 		Preload("TransactionDetails.Product").
 		Find(&transactions)
 	return transactions
+}
+
+func (transactionRepository *transactionRepositoryImpl) Update(ctx context.Context, transaction entity.Transaction) error {
+	err := transactionRepository.DB.WithContext(ctx).Save(&transaction).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (transactionRepository *transactionRepositoryImpl) GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error) {
+	var orders []entity.Order
+	var data map[string]interface{}
+	var pendingRequestsCount int
+	var processedRequestsCount int
+	var revenue float64
+
+	err := transactionRepository.DB.WithContext(ctx).
+		Preload("Transaction").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Where("tb_transactions.status = ?", "success").
+		Find(&orders).Error
+	exception.PanicLogging(err)
+	for _, order := range orders {
+		if order.Status == 0 {
+			pendingRequestsCount++
+		} else if order.Status == 3 {
+			processedRequestsCount++
+		}
+		revenue += order.Transaction.Amount
+	}
+
+	data = map[string]interface{}{
+		"pendingRequests":   pendingRequestsCount,
+		"processedRequests": processedRequestsCount,
+		"revenue":           revenue,
+	}
+	return data, nil
+
 }

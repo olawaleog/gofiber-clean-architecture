@@ -8,11 +8,9 @@ type TransactionDetail struct {
 	Price         int64     `gorm:"column:price"`
 	Quantity      int32     `gorm:"column:quantity"`
 	TransactionId uuid.UUID
-	ProductId     uuid.UUID
-	Product       Product
 	Transaction   Transaction
 }
 
 func (TransactionDetail) TableName() string {
-	return "tb_transaction_detail"
+	return "tb_transaction_details"
 }

@@ -1,8 +1,10 @@
 package configuration
 
 import (
+	"fmt"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
@@ -32,8 +34,8 @@ func NewDatabase(config Config) *gorm.DB {
 			Colorful:                  true,
 		},
 	)
-
-	db, err := gorm.Open(mysql.Open(username+":"+password+"@tcp("+host+":"+port+")/"+dbName+"?parseTime=true"), &gorm.Config{
+	connectionString := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=disable", host, username, password, dbName, port)
+	db, err := gorm.Open(postgres.Open(connectionString), &gorm.Config{
 		Logger: loggerDb,
 	})
 	exception.PanicLogging(err)
@@ -45,12 +47,18 @@ func NewDatabase(config Config) *gorm.DB {
 	sqlDB.SetMaxIdleConns(maxPoolIdle)
 	sqlDB.SetConnMaxLifetime(time.Duration(rand.Int31n(int32(maxPollLifeTime))) * time.Millisecond)
 
+	err = db.AutoMigrate(&entity.Transaction{}, &entity.TransactionDetail{},
+		&entity.User{}, &entity.UserRole{}, &entity.MessageTemplate{},
+		&entity.LocalGovernmentArea{}, &entity.Address{}, &entity.Truck{},
+		&entity.OneTimePassword{}, &entity.Refinery{}, &entity.PaymentMethod{},
+		&entity.Order{},
+	)
 	//autoMigrate
 	//err = db.AutoMigrate(&entity.Product{})
 	//err = db.AutoMigrate(&entity.Transaction{})
 	//err = db.AutoMigrate(&entity.TransactionDetail{})
 	//err = db.AutoMigrate(&entity.User{})
 	//err = db.AutoMigrate(&entity.UserRole{})
-	//exception.PanicLogging(err)
+	exception.PanicLogging(err)
 	return db
 }
