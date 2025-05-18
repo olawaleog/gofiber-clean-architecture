@@ -19,6 +19,7 @@ type Order struct {
 	Status          uint        `gorm:"column:status;type:int"`
 	TruckId         uint        `gorm:"column:truck_id;type:int"`
 	Capacity        string      `gorm:"column:capacity;type:varchar(50)"`
+	Type            string      `gorm:"column:type;type:varchar(50)"`
 }
 
 func (Order) TableName() string {

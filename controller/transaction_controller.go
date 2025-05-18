@@ -22,9 +22,12 @@ func (c TransactionController) Route(app *fiber.App) {
 	app.Post("/v1/api/payment-mobile-money", c.InitiateMobileMoneyPayment)
 	app.Get("/v1/api/payment-status/:id", c.PaymentStatus)
 	app.Get("/v1/api/refinery-dashboard-data", c.GetRefineryDashboardData)
+	app.Get("/v1/api/admin-dashboard-data", c.GetAdminDashboardData)
 	app.Get("/v1/api/pending-orders", c.GetRefineryOrders)
 	app.Post("/v1/api/approve-or-reject-order", c.ApproveOrRejectOrder)
 	app.Get("/v1/api/get-driver-pending-orders", c.GetDriverPendingOrder)
+	app.Get("/v1/api/get-customer-orders", c.GetCustomerOrders)
+	app.Get("/v1/api/transaction-list", c.GetTransactions)
 
 	//app.Post("/v1/api/paystack/webook", controller.PayStackWebhook)
 }
@@ -121,6 +124,44 @@ func (c TransactionController) GetDriverPendingOrder(ctx *fiber.Ctx) error {
 	exception.PanicLogging(err)
 	userId := claims["userId"].(float64)
 	orders := c.TransactionService.GetDriverPendingOrder(ctx.Context(), userId, 1)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    orders,
+		Success: true,
+	})
+}
+
+func (c TransactionController) GetTransactions(ctx *fiber.Ctx) error {
+
+	transactions := c.TransactionService.GetTransactions(ctx.Context())
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    transactions,
+		Success: true,
+	})
+}
+
+func (c TransactionController) GetAdminDashboardData(ctx *fiber.Ctx) error {
+	refineryData, err := c.TransactionService.GetAdminDashboardData(ctx.Context())
+	exception.PanicLogging(err)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    refineryData,
+		Success: true,
+	})
+}
+
+func (c TransactionController) GetCustomerOrders(ctx *fiber.Ctx) error {
+	var claims map[string]interface{}
+	token := ctx.Get("Authorization")
+	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+	exception.PanicLogging(err)
+	userId := claims["userId"].(float64)
+	orders, err := c.TransactionService.GetCustomerOrders(ctx.Context(), uint(userId))
+	exception.PanicLogging(err)
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,
 		Message: "Successful",

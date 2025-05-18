@@ -21,4 +21,5 @@ type OrderModel struct {
 	User            UserModel        `json:"user"`
 	DeliveryPlaceId string           `json:"deliveryPlaceId"`
 	RefineryPlaceId string           `json:"refineryPlaceId"`
+	Type            string           `json:"type"`
 }

@@ -6,6 +6,10 @@ type CreateRefineryModel struct {
 	Name                           string    `json:"name"`
 	PlaceId                        string    `json:"placeId"`
 	Address                        string    `json:"address"`
+	Longitude                      string    `json:"longitude"`
+	Latitude                       string    `json:"latitude"`
+	HasDomesticWaterSupply         bool      `json:"hasDomesticWaterSupply"`
+	HasIndustrialWaterSupply       bool      `json:"hasIndustrialWaterSupply"`
 	LicenceExpirationDate          time.Time `json:"licenceExpirationDate"`
 	Capacity                       string    `json:"capacity"`
 	DomesticCostPerThousandLitre   float64   `json:"domesticCostPerThousandLitre"`

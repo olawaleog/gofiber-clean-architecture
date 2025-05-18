@@ -32,7 +32,16 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 	distanceResult := make(map[string]interface{})
 	// calculate route distance for each refinery
 	for i := 0; i < len(refineries); i++ {
-		distanceResult = CalculateDistance(refineries[i].PlaceId, request.PlaceId)
+		if !refineries[i].HasIndustrialWaterSupply && request.Type == "industrial" {
+			continue
+		}
+		if !refineries[i].HasDomesticWaterSupply && request.Type == "domestic" {
+			continue
+		}
+		distanceResult = CalculateDistance(refineries[i], request.PlaceId)
+		if len(distanceResult) == 0 {
+			continue
+		}
 		distance := distanceResult["distance_km"].(float64)
 		if distance < shortestDistance {
 			selectRefinery = refineries[i]
@@ -42,9 +51,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 	}
 
 	if shortestDistance > 40 {
-		return model.RefineryCostModel{}, exception.BadRequestError{
-			Message: "Refinery not found",
-		}
+		return model.RefineryCostModel{}, nil
 	}
 	//timeInSeconds := distanceResult["time_seconds"].(float64)
 	distance := distanceResult["distance_km"].(float64)
@@ -95,12 +102,20 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 	return response, nil
 }
 
-func CalculateDistance(originPlaceID, destinationPlaceID string) map[string]interface{} {
+func CalculateDistance(origin entity.Refinery, destinationPlaceID string) map[string]interface{} {
 	apiKey := "AIzaSyAFYfTvR_8IzpQb7DHMl9HA6h1kskcz2ok" // Replace with your actual API key
-	url := fmt.Sprintf(
-		"https://maps.googleapis.com/maps/api/distancematrix/json?origins=place_id:%s&destinations=place_id:%s&key=%s",
-		originPlaceID, destinationPlaceID, apiKey,
-	)
+	url := ""
+	if origin.PlaceId == "" {
+		url = fmt.Sprintf(
+			"https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s,%s&destinations=place_id:%s&key=%s",
+			origin.Longitude, origin.Latitude, destinationPlaceID, apiKey,
+		)
+	} else {
+		url = fmt.Sprintf(
+			"https://maps.googleapis.com/maps/api/distancematrix/json?origins=place_id:%s&destinations=place_id:%s&key=%s",
+			origin.PlaceId, destinationPlaceID, apiKey,
+		)
+	}
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -136,8 +151,7 @@ func CalculateDistance(originPlaceID, destinationPlaceID string) map[string]inte
 
 		} // Convert meters to kilometers
 	}
-
-	panic("No distance data found in API response")
+	return map[string]interface{}{}
 }
 
 func (r RefineryServiceImpl) CreateRefinery(ctx context.Context, refineryModel model.CreateRefineryModel) (model.RefineryModel, error) {
@@ -163,6 +177,11 @@ func (r RefineryServiceImpl) CreateRefinery(ctx context.Context, refineryModel m
 		Email:                          refineryModel.Email,
 		Website:                        refineryModel.Website,
 		Address:                        refineryModel.Address,
+		Longitude:                      refineryModel.Longitude,
+		Latitude:                       refineryModel.Latitude,
+		HasDomesticWaterSupply:         refineryModel.HasDomesticWaterSupply,
+		HasIndustrialWaterSupply:       refineryModel.HasIndustrialWaterSupply,
+		IsActive:                       true,
 	}
 
 	refineryData, err := r.RefineryRepository.Create(ctx, refinery)
@@ -182,6 +201,7 @@ func (r RefineryServiceImpl) CreateRefinery(ctx context.Context, refineryModel m
 		Email:                          refineryData.Email,
 		Website:                        refineryData.Website,
 		Address:                        refineryData.Address,
+		IsActive:                       refineryData.IsActive,
 	}
 	password, err := common.GeneratePassword(8)
 	exception.PanicLogging(err)
@@ -220,6 +240,11 @@ func (r RefineryServiceImpl) ListRefineries(ctx context.Context) ([]model.Refine
 			DomesticCostPerThousandLitre:   refinery.DomesticCostPerThousandLitre,
 			Region:                         refinery.Region,
 			Website:                        refinery.Website,
+			IsActive:                       refinery.IsActive,
+			Longitude:                      refinery.Longitude,
+			Latitude:                       refinery.Latitude,
+			HasDomesticWaterSupply:         refinery.HasDomesticWaterSupply,
+			HasIndustrialWaterSupply:       refinery.HasIndustrialWaterSupply,
 		})
 	}
 
@@ -228,21 +253,29 @@ func (r RefineryServiceImpl) ListRefineries(ctx context.Context) ([]model.Refine
 }
 
 func (r RefineryServiceImpl) UpdateRefinery(ctx context.Context, refineryModel model.CreateRefineryModel, id string) (model.RefineryModel, error) {
-	refinery := entity.Refinery{
-		Name:                           refineryModel.Name,
-		PlaceId:                        refineryModel.PlaceId,
-		LicenceExpiry:                  refineryModel.LicenceExpirationDate,
-		DomesticCostPerThousandLitre:   refineryModel.DomesticCostPerThousandLitre,
-		IndustrialCostPerThousandLitre: refineryModel.IndustrialCostPerThousandLitre,
-		RawLocationData:                refineryModel.RawLocationData,
-		Region:                         refineryModel.Region,
-		Phone:                          refineryModel.Phone,
-		Email:                          refineryModel.Email,
-		Website:                        refineryModel.Website,
-		Address:                        refineryModel.Address,
+	existingRefinery := r.RefineryRepository.FindById(ctx, id)
+	if existingRefinery.ID == 0 {
+		return model.RefineryModel{}, exception.BadRequestError{
+			Message: "Refinery not found",
+		}
 	}
+	existingRefinery.Name = refineryModel.Name
+	existingRefinery.PlaceId = refineryModel.PlaceId
+	existingRefinery.LicenceExpiry = refineryModel.LicenceExpirationDate
+	existingRefinery.DomesticCostPerThousandLitre = refineryModel.DomesticCostPerThousandLitre
+	existingRefinery.IndustrialCostPerThousandLitre = refineryModel.IndustrialCostPerThousandLitre
+	existingRefinery.RawLocationData = refineryModel.RawLocationData
+	existingRefinery.Region = refineryModel.Region
+	existingRefinery.Phone = refineryModel.Phone
+	existingRefinery.Email = refineryModel.Email
+	existingRefinery.Website = refineryModel.Website
+	existingRefinery.Address = refineryModel.Address
+	existingRefinery.HasDomesticWaterSupply = refineryModel.HasDomesticWaterSupply
+	existingRefinery.HasIndustrialWaterSupply = refineryModel.HasIndustrialWaterSupply
+	existingRefinery.Longitude = refineryModel.Longitude
+	existingRefinery.Latitude = refineryModel.Latitude
 
-	refineryData, err := r.RefineryRepository.Update(ctx, refinery, id)
+	refineryData, err := r.RefineryRepository.Update(ctx, existingRefinery, id)
 	if err != nil {
 		return model.RefineryModel{}, err
 	}
@@ -266,4 +299,22 @@ func (r RefineryServiceImpl) GetRefineryDashboardData(ctx context.Context, u uin
 	}
 
 	return refineryData, nil
+}
+
+func (r RefineryServiceImpl) ToggleRefineryStatus(ctx context.Context, statusModel model.ToggleRefineryStatusModel) (bool, error) {
+	refinery := r.RefineryRepository.FindById(ctx, statusModel.Id)
+	if refinery.ID == 0 {
+		return false, exception.BadRequestError{
+			Message: "Refinery not found",
+		}
+	}
+	refinery.IsActive = statusModel.Status
+	refinery, _ = r.RefineryRepository.Update(ctx, refinery, fmt.Sprintf("%d", statusModel.Id))
+	if refinery.ID == 0 {
+		return false, exception.BadRequestError{
+			Message: "Refinery not found",
+		}
+	}
+	return true, nil
+
 }

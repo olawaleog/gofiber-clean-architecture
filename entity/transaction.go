@@ -28,6 +28,9 @@ type Transaction struct {
 	Reference   string    `gorm:"column:reference;type:varchar(255)"`
 	Scheme      string    `gorm:"column:scheme;type:varchar(255)"`
 	RawRequest  string    `gorm:"column:raw_request;type:text"`
+	Capacity    string    `gorm:"column:capacity;type:varchar(50)"`
+	Type        string    `gorm:"column:type;type:varchar(50)"`
+
 	//Order       Order     `gorm:"foreignkey:TransactionId"`
 }
 

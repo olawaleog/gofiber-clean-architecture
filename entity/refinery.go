@@ -19,6 +19,11 @@ type Refinery struct {
 	Region                         string    `gorm:"column:region;type:text"`
 	DomesticCostPerThousandLitre   float64   `gorm:"column:domestic_cost_per_thousand_litre;type:numeric(10,2)"`
 	IndustrialCostPerThousandLitre float64   `gorm:"column:industrial_cost_per_thousand_litre;type:numeric(10,2)"`
+	Longitude                      string    `gorm:"column:longitude;type:text"`
+	Latitude                       string    `gorm:"column:latitude;type:text"`
+	HasDomesticWaterSupply         bool      `gorm:"column:has_domestic_water_supply;type:boolean"`
+	HasIndustrialWaterSupply       bool      `gorm:"column:has_industrial_water_supply;type:boolean"`
+	IsActive                       bool      `gorm:"column:is_active;type:boolean"`
 }
 
 func (Refinery) TableName() string {

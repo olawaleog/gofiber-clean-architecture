@@ -24,7 +24,92 @@ type transactionServiceImpl struct {
 	configuration.Config
 }
 
-func (t transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel {
+func (t *transactionServiceImpl) GetCustomerOrders(ctx context.Context, u uint) ([]model.OrderModel, error) {
+	orders, err := t.OrderRepository.GetUserOrders(ctx, u)
+	exception.PanicLogging(err)
+	if orders == nil {
+		return nil, exception.BadRequestError{
+			Message: "Refinery not found",
+		}
+	}
+	var orderModels []model.OrderModel
+	for _, order := range orders {
+		orderModels = append(orderModels, model.OrderModel{
+			Id:          order.ID,
+			Amount:      order.Amount,
+			Currency:    order.Currency,
+			WaterCost:   order.WaterCost,
+			DeliveryFee: order.DeliveryFee,
+			RefineryId:  order.RefineryId,
+			Capacity:    order.Capacity,
+			Type:        order.Type,
+			Transaction: model.TransactionModel{
+				ID:          order.Transaction.ID,
+				Email:       order.Transaction.Email,
+				PhoneNumber: order.Transaction.PhoneNumber,
+				Amount:      order.Transaction.Amount,
+				Currency:    order.Transaction.Currency,
+				PaymentID:   order.Transaction.PaymentID,
+				Provider:    order.Transaction.Provider,
+				PaymentType: order.Transaction.PaymentType,
+				Status:      order.Transaction.Status,
+				RawRequest:  order.Transaction.RawRequest,
+				RawResponse: order.Transaction.RawResponse,
+				Reference:   order.Transaction.Reference,
+				DeliveryFee: order.Transaction.DeliveryFee,
+				WaterCost:   order.Transaction.WaterCost,
+			},
+			Status:        order.Status,
+			TransactionId: order.TransactionId,
+			TruckId:       order.TruckId,
+			CreatedAt:     order.CreatedAt,
+			//UserId:       u,
+			//UserName:     "",
+			//UserPhoneNumber:"",
+			//UserEmailAddress:"",
+			//UserFirstName:"",
+			//UserLastName:"",
+		})
+	}
+
+	return orderModels, nil
+}
+
+func (t *transactionServiceImpl) GetAdminDashboardData(ctx context.Context) (map[string]interface{}, error) {
+
+	response := t.TransactionRepository.GetAdminDashboardData(ctx)
+
+	return response, nil
+
+}
+
+func (t *transactionServiceImpl) GetTransactions(ctx context.Context) []model.TransactionModel {
+	var list []model.TransactionModel
+	var transactions []entity.Transaction
+	transactions = t.TransactionRepository.FindAll(ctx)
+	for _, transaction := range transactions {
+		list = append(list, model.TransactionModel{
+			ID:          transaction.ID,
+			Email:       transaction.Email,
+			PhoneNumber: transaction.PhoneNumber,
+			Amount:      transaction.Amount,
+			Currency:    transaction.Currency,
+			PaymentID:   transaction.PaymentID,
+			Provider:    transaction.Provider,
+			PaymentType: transaction.PaymentType,
+			Status:      transaction.Status,
+			RawRequest:  transaction.RawRequest,
+			RawResponse: transaction.RawResponse,
+			Reference:   transaction.Reference,
+			DeliveryFee: transaction.DeliveryFee,
+			WaterCost:   transaction.WaterCost,
+			CreatedAt:   transaction.CreatedAt,
+		})
+	}
+	return list
+}
+
+func (t *transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel {
 	orders, err := t.OrderRepository.FindDriverOrdersByUserId(ctx, userId, stage)
 	exception.PanicLogging(err)
 	if orders == nil {
@@ -86,7 +171,7 @@ func (t transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, userI
 	return orderModels
 }
 
-func (t transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, orderModel model.ApproveOrRejectOrderModel) (interface{}, error) {
+func (t *transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, orderModel model.ApproveOrRejectOrderModel) (interface{}, error) {
 	order, err := t.OrderRepository.FindById(ctx, orderModel.OrderId)
 	exception.PanicLogging(err)
 
@@ -111,7 +196,7 @@ func (t transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, orderM
 	return order, nil
 }
 
-func (t transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) ([]model.OrderModel, error) {
+func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) ([]model.OrderModel, error) {
 	orders, err := t.OrderRepository.GetRefineryOrders(ctx, u)
 	exception.PanicLogging(err)
 	if orders == nil {
@@ -157,7 +242,7 @@ func (t transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) (
 	return orderModels, nil
 }
 
-func (t transactionServiceImpl) PaymentStatus(ctx context.Context, id string) model.TransactionStatusModel {
+func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) model.TransactionStatusModel {
 	transaction, err := t.TransactionRepository.FindByReference(ctx, id)
 	exception.PanicLogging(err)
 
@@ -198,7 +283,8 @@ func (t transactionServiceImpl) PaymentStatus(ctx context.Context, id string) mo
 				RefineryAddress: request.RefineryAddress,
 				RefineryPlaceId: request.RefineryPlaceId,
 				RefineryId:      request.RefineryId,
-				Capacity:        request.Capacity,
+				Capacity:        transaction.Capacity,
+				Type:            transaction.Type,
 			}
 			order = t.OrderRepository.Insert(ctx, order)
 		}
@@ -207,7 +293,7 @@ func (t transactionServiceImpl) PaymentStatus(ctx context.Context, id string) mo
 	return transactionStatus
 }
 
-func (t transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Context, request model.MobileMoneyRequestModel) interface{} {
+func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Context, request model.MobileMoneyRequestModel) interface{} {
 	//amount, err := strconv.ParseFloat(request.Amount, 64)
 	//exception.PanicLogging(err)
 	rawRequest, err := json.Marshal(request)
@@ -225,6 +311,8 @@ func (t transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Conte
 		RawRequest:  string(rawRequest),
 		WaterCost:   request.WaterCost,
 		DeliveryFee: request.DeliveryFee,
+		Capacity:    request.Capacity,
+		Type:        request.Type,
 	}
 	transaction = t.TransactionRepository.Insert(ctx, transaction)
 
@@ -263,8 +351,8 @@ func GetTransactionStatus(data string) model.TransactionStatusModel {
 	return transactionStatus
 }
 
-func (r transactionServiceImpl) GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error) {
-	refineryData, err := r.TransactionRepository.GetRefineryDashboardData(ctx, u)
+func (t *transactionServiceImpl) GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error) {
+	refineryData, err := t.TransactionRepository.GetRefineryDashboardData(ctx, u)
 	exception.PanicLogging(err)
 	if refineryData == nil {
 		return nil, exception.BadRequestError{

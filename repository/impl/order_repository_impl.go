@@ -16,6 +16,24 @@ func NewOrderRepository(db *gorm.DB) repository.OrderRepository {
 	return &OrderRepositoryImpl{DB: *db}
 }
 
+func (o OrderRepositoryImpl) GetUserOrders(ctx context.Context, u uint) ([]entity.Order, error) {
+	var orders []entity.Order
+	err := o.DB.WithContext(ctx).
+		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Where("tb_users.id = ?", u).
+		Order("tb_orders.id desc").
+		Find(&orders).Error
+	if err != nil {
+		return orders, err
+	}
+	return orders, nil
+}
+
 func (o OrderRepositoryImpl) FindByTransactionId(ctx context.Context, transactionId uint) (entity.Order, error) {
 	var order entity.Order
 	err := o.DB.WithContext(ctx).Where("transaction_id = ?", transactionId).First(&order).Error

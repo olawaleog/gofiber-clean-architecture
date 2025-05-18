@@ -12,4 +12,5 @@ type OrderRepository interface {
 	FindById(ctx context.Context, id uint) (entity.Order, error)
 	Update(ctx context.Context, order entity.Order) error
 	FindDriverOrdersByUserId(ctx context.Context, id float64, stage uint) ([]entity.Order, error)
+	GetUserOrders(ctx context.Context, u uint) ([]entity.Order, error)
 }

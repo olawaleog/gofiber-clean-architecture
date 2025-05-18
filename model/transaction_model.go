@@ -1,27 +1,30 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 //generate TransactionModel form entity.Transaction
 
 type TransactionModel struct {
-	ID          uint    `json:"id"`
-	Email       string  `json:"email"`
-	PhoneNumber string  `json:"phone_number"`
-	Amount      float64 `json:"amount"`
-	Currency    string  `json:"currency"`
-	UserId      uint    `json:"user_id"`
-	PaymentID   string  `json:"payment_id"`
-	Provider    string  `json:"provider"`
-	PaymentType string  `json:"payment_type"`
-	Status      string  `json:"status"`
-	Reference   string  `json:"reference"`
-	RawRequest  string  `json:"raw_request"`
-	RawResponse string  `json:"raw_response"`
-	WaterCost   float64 `json:"water_cost"`
-	DeliveryFee float64 `json:"delivery_fee"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+	ID          uint      `json:"id"`
+	Email       string    `json:"email"`
+	PhoneNumber string    `json:"phone_number"`
+	Amount      float64   `json:"amount"`
+	Currency    string    `json:"currency"`
+	UserId      uint      `json:"user_id"`
+	PaymentID   string    `json:"payment_id"`
+	Provider    string    `json:"provider"`
+	PaymentType string    `json:"payment_type"`
+	Status      string    `json:"status"`
+	Reference   string    `json:"reference"`
+	RawRequest  string    `json:"raw_request"`
+	RawResponse string    `json:"raw_response"`
+	WaterCost   float64   `json:"water_cost"`
+	DeliveryFee float64   `json:"delivery_fee"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   string    `json:"updated_at"`
 }
 type TransactionCreateUpdateModel struct {
 	Id                 string                               `json:"id"`

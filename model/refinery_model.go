@@ -16,4 +16,9 @@ type RefineryModel struct {
 	Region                         string    `json:"region"`
 	DomesticCostPerThousandLitre   float64   `json:"domesticCostPerThousandLitre"`
 	IndustrialCostPerThousandLitre float64   `json:"industrialCostPerThousandLitre"`
+	IsActive                       bool      `json:"isActive"`
+	Longitude                      string    `json:"longitude"`
+	Latitude                       string    `json:"latitude"`
+	HasDomesticWaterSupply         bool      `json:"hasDomesticWaterSupply"`
+	HasIndustrialWaterSupply       bool      `json:"hasIndustrialWaterSupply"`
 }

@@ -15,4 +15,5 @@ type MobileMoneyRequestModel struct {
 	RefineryAddress string  `json:"refineryAddress"`
 	RefineryId      uint    `json:"refineryId"`
 	Capacity        string  `json:"capacity"`
+	Type            string  `json:"type"`
 }

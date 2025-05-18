@@ -10,4 +10,5 @@ type RefineryRepository interface {
 	Create(ctx context.Context, refinery entity.Refinery) (entity.Refinery, error)
 	Update(ctx context.Context, refinery entity.Refinery, id string) (entity.Refinery, error)
 	GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error)
+	FindById(ctx context.Context, id any) entity.Refinery
 }

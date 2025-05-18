@@ -19,6 +19,7 @@ func (controller RefineryController) Route(app *fiber.App) {
 	app.Post("/v1/api/refinery/create", controller.CreateRefinery)
 	app.Post("/v1/api/refinery/update/:id", controller.UpdateRefinery)
 	app.Get("/v1/api/refinery/list", controller.ListRefineries)
+	app.Post("/v1/api/refinery/toggle-status", controller.ToggleRefineryStatus)
 
 }
 
@@ -34,7 +35,6 @@ func (controller RefineryController) GetRefinery(ctx *fiber.Ctx) error {
 	err := ctx.BodyParser(&getRefineryModel)
 	exception.PanicLogging(err)
 	refinery, err := controller.RefineryService.GetRefinery(ctx.Context(), getRefineryModel)
-	exception.PanicLogging(err)
 
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,
@@ -77,6 +77,20 @@ func (controller RefineryController) UpdateRefinery(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
 	refinery, err := controller.RefineryService.UpdateRefinery(ctx.Context(), updateRefineryModel, id)
+	exception.PanicLogging(err)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    refinery,
+	})
+}
+
+func (controller RefineryController) ToggleRefineryStatus(ctx *fiber.Ctx) error {
+	var toggleRefineryStatusModel model.ToggleRefineryStatusModel
+	err := ctx.BodyParser(&toggleRefineryStatusModel)
+	exception.PanicLogging(err)
+
+	refinery, err := controller.RefineryService.ToggleRefineryStatus(ctx.Context(), toggleRefineryStatusModel)
 	exception.PanicLogging(err)
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,

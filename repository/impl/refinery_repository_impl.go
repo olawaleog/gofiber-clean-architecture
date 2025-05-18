@@ -18,7 +18,9 @@ func NewRefineryRepositoryImpl(db *gorm.DB) repository.RefineryRepository {
 
 func (r RefineryRepositoryImpl) ListRefinery(ctx context.Context) ([]entity.Refinery, error) {
 	var refinerys []entity.Refinery
-	err := r.DB.WithContext(ctx).Find(&refinerys).Error
+	err := r.DB.WithContext(ctx).
+		Order("created_at desc").
+		Find(&refinerys).Error
 	exception.PanicLogging(err)
 	return refinerys, nil
 }
@@ -31,7 +33,7 @@ func (r RefineryRepositoryImpl) Create(ctx context.Context, refinery entity.Refi
 	return refinery, nil
 }
 func (r RefineryRepositoryImpl) Update(ctx context.Context, refinery entity.Refinery, id string) (entity.Refinery, error) {
-	err := r.DB.WithContext(ctx).Where("id = ?", id).Updates(&refinery).Error
+	err := r.DB.WithContext(ctx).Where("id = ?", id).Save(&refinery).Error
 	if err != nil {
 		return entity.Refinery{}, err
 	}
@@ -52,4 +54,13 @@ func (r RefineryRepositoryImpl) GetRefineryDashboardData(ctx context.Context, u 
 	data["count"] = count
 	return data, nil
 
+}
+
+func (r RefineryRepositoryImpl) FindById(ctx context.Context, id any) entity.Refinery {
+	var refinery entity.Refinery
+	err := r.DB.WithContext(ctx).Where("id = ?", id).First(&refinery).Error
+	if err != nil {
+		return entity.Refinery{}
+	}
+	return refinery
 }

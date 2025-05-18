@@ -1,0 +1,11 @@
+[Unit]
+Description=aqua-wizz
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+ExecStart=/var/www/api/aquawizz
+
+[Install]
+WantedBy=multi-user.target

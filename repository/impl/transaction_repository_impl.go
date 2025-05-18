@@ -17,6 +17,58 @@ type transactionRepositoryImpl struct {
 	*gorm.DB
 }
 
+func (t *transactionRepositoryImpl) GetAdminDashboardData(ctx context.Context) map[string]interface{} {
+	var refineries []entity.Refinery
+	var orders []entity.Order
+	var users []entity.User
+	var data map[string]interface{}
+	var totalOrderCount int
+	var totalRefineryCount int
+	var customerCount int
+	var totalOrderAmount float64
+	err := t.DB.WithContext(ctx).
+		Preload("Transaction").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Where("tb_transactions.status = ?", "success").
+		Find(&orders).Error
+	exception.PanicLogging(err)
+	for _, order := range orders {
+		if order.Status == 0 {
+			totalOrderCount++
+		} else if order.Status == 3 {
+			totalOrderCount++
+		}
+		totalOrderAmount += order.Transaction.Amount
+	}
+	err = t.DB.WithContext(ctx).
+		Where("is_active = ?", true).
+		Find(&refineries).Error
+	exception.PanicLogging(err)
+	for _, refinery := range refineries {
+		if refinery.IsActive {
+			totalRefineryCount++
+		}
+	}
+	err = t.DB.WithContext(ctx).
+		Where("is_active = ?", true).
+		Find(&users).Error
+
+	exception.PanicLogging(err)
+	for _, user := range users {
+		if user.IsActive && user.UserRole == "customer" {
+			customerCount++
+		}
+	}
+
+	data = map[string]interface{}{
+		"totalOrderCount":    totalOrderCount,
+		"totalRefineryCount": totalRefineryCount,
+		"totalOrderAmount":   totalOrderAmount,
+		"customerCount":      customerCount,
+	}
+	return data
+}
+
 func (transactionRepository *transactionRepositoryImpl) FindByReference(ctx context.Context, id string) (entity.Transaction, error) {
 	var transaction entity.Transaction
 	result := transactionRepository.DB.Where("id = ?", id).First(&transaction)
@@ -56,12 +108,7 @@ func (transactionRepository *transactionRepositoryImpl) FindById(ctx context.Con
 func (transactionRepository *transactionRepositoryImpl) FindAll(ctx context.Context) []entity.Transaction {
 	var transactions []entity.Transaction
 	transactionRepository.DB.WithContext(ctx).
-		Table("tb_transaction").
-		Select("tb_transaction.transaction_id, tb_transaction.total_price, tb_transaction_detail.transaction_detail_id, tb_transaction_detail.sub_total_price, tb_transaction_detail.price, tb_transaction_detail.quantity, tb_product.product_id, tb_product.name, tb_product.price, tb_product.quantity").
-		Joins("join tb_transaction_detail on tb_transaction_detail.transaction_id = tb_transaction.transaction_id").
-		Joins("join tb_product on tb_product.product_id = tb_transaction_detail.product_id").
-		Preload("TransactionDetails").
-		Preload("TransactionDetails.Product").
+		Order("created_at desc").
 		Find(&transactions)
 	return transactions
 }

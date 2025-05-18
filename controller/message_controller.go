@@ -13,6 +13,7 @@ type MessageController struct {
 }
 
 func (c MessageController) Route(app *fiber.App) {
+	app.Get("/", c.WelcomeToAquaWizz)
 	app.Get("/message-templates", c.FindAllMessageTemplates)
 }
 
@@ -55,6 +56,15 @@ func (c MessageController) UpdateMessageTemplate(ctx *fiber.Ctx) error {
 		Code:    200,
 		Message: "Success",
 		Data:    nil,
+		Success: true,
+	})
+}
+
+func (c MessageController) WelcomeToAquaWizz(ctx *fiber.Ctx) error {
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "Welcome to Aqua Wizz",
+		Data:    "Welcome to Aqua Wizz",
 		Success: true,
 	})
 }
