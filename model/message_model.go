@@ -11,4 +11,5 @@ type EmailMessageModel struct {
 type SMSMessageModel struct {
 	PhoneNumber string `json:"phoneNumber"`
 	Message     string `json:"message"`
+	CountryCode string `json:"countryCode"`
 }

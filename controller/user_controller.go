@@ -52,14 +52,19 @@ func (controller UserController) Register(c *fiber.Ctx) error {
 	var request model.UserModel
 	err := c.BodyParser(&request)
 	exception.PanicLogging(err)
+	value := controller.Config.Get("COUNTRY_CODE")
+	if value == "" {
+		value = "+233"
+	}
 
+	request.CountryCode = value
 	file, err := c.FormFile("image")
 	exception.PanicLogging(err)
 	g := uuid.New().String()
 	extension := strings.Split(file.Filename, ".")
 
 	request.FileName = fmt.Sprintf("%v.%s", g, extension[1])
-
+	request.IsActive = false
 	_ = controller.UserService.Register(c.Context(), request)
 	destination := fmt.Sprintf("./uploads/%s", request.FileName)
 

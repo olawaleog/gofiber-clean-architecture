@@ -39,7 +39,8 @@ var embedDirStatic embed.FS
 // @description Authorization For JWT
 func main() {
 	//setup configuration
-	config := configuration.New("/var/www/api/.env")
+	config := configuration.New(".env")
+	//config := configuration.New("/var/www/api/.env")
 	database := configuration.NewDatabase(config)
 	//redis := configuration.NewRedis(config)
 	common.NewLogger()

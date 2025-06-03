@@ -36,8 +36,12 @@ func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageM
 	body["username"] = m.config.Get("AFRICAS_TALKING_USERNAME")
 	body["enqueue"] = 1
 	body["message"] = data.Message
+	if data.PhoneNumber[0] == '0' {
+		body["to"] = data.CountryCode + data.PhoneNumber[1:]
+	} else {
+		body["to"] = data.PhoneNumber
+	}
 
-	body["to"] = "+234" + data.PhoneNumber[1:]
 	url := m.config.Get("AFRICAS_TALKING_BASE_URL") + "/version1/messaging"
 	m.HttpService.PostMethod(ctx, url, "POST", &body, &headers, true)
 }

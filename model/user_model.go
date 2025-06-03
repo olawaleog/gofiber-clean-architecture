@@ -15,11 +15,13 @@ type UserModel struct {
 	Image        string `json:"image"`
 	FileName     string `json:"fileName"`
 
-	Street     string `json:"street"`
-	Region     string `json:"region"`
-	City       string `json:"city"`
-	PostalCode string `json:"postalCode"`
-	RefineryId uint   `json:"refineryId"`
+	Street      string `json:"street"`
+	Region      string `json:"region"`
+	City        string `json:"city"`
+	PostalCode  string `json:"postalCode"`
+	RefineryId  uint   `json:"refineryId"`
+	CountryCode string `json:"countryCode"`
+	OtpCode     string `json:"otpCode"`
 }
 
 type LoginModel struct {

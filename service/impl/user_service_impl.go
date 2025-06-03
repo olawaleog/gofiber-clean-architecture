@@ -103,10 +103,11 @@ func (u *userServiceImpl) ResetPassword(ctx context.Context, request model.UserM
 	}
 	otp, err := u.MessageService.GenerateOneTimePassword(ctx, userResult.Id)
 	exception.PanicLogging(err)
-	message := "Hello " + userResult.FirstName + "  your password reset otp is " + otp.Code
+	message := "Hello " + userResult.FirstName + "  your password reset otp is " + otp.Code + ", Do not share your this otp with a third-party."
 	// Send SMS
 	emailMessageModel := model.SMSMessageModel{
 		PhoneNumber: request.PhoneNumber,
+		CountryCode: userResult.CountryCode,
 		Message:     message,
 	}
 	u.MessageService.SendSMS(ctx, emailMessageModel)
@@ -190,6 +191,11 @@ func (userService *userServiceImpl) Authentication(ctx context.Context, model mo
 			Message: "incorrect username and password",
 		})
 	}
+	if userResult.IsActive == false {
+		panic(exception.UnauthorizedError{
+			Message: "User is not active",
+		})
+	}
 	return userResult
 }
 
@@ -220,14 +226,14 @@ func (userService *userServiceImpl) Register(ctx context.Context, userModel mode
 
 func (u *userServiceImpl) RegisterCustomer(ctx context.Context, userModel model.UserModel) interface{} {
 	userModel.IsActive = true
-	userModel.Role = "Customer"
+	userModel.Role = "customer"
 	user, err := u.UserRepository.Create(userModel)
 	exception.PanicLogging(err)
 
 	// Send email
 	otp, err := u.MessageService.GenerateOneTimePassword(ctx, user.ID)
 	exception.PanicLogging(err)
-	message := "Hello " + user.FirstName + "   your OTP is " + otp.Code
+	message := "Hello " + user.FirstName + "   your OTP is " + otp.Code + ", Do not share your this otp with a third-party."
 	// Send SMS
 	emailMessageModel := model.SMSMessageModel{
 		PhoneNumber: user.PhoneNumber,
@@ -235,7 +241,18 @@ func (u *userServiceImpl) RegisterCustomer(ctx context.Context, userModel model.
 	}
 	user.Password = ""
 	u.MessageService.SendSMS(ctx, emailMessageModel)
-	return user
+	userModel = model.UserModel{
+		Id:           user.ID,
+		FirstName:    user.FirstName,
+		LastName:     user.LastName,
+		Username:     user.Username,
+		EmailAddress: user.Email,
+		PhoneNumber:  user.PhoneNumber,
+		Role:         user.UserRole,
+		IsActive:     user.IsActive,
+		OtpCode:      otp.Code,
+	}
+	return userModel
 }
 
 func (userService *userServiceImpl) Create(ctx context.Context, model model.UserModel, file *multipart.FileHeader) entity.User {

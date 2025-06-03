@@ -15,6 +15,7 @@ type User struct {
 	Addresses   []Address `gorm:"ForeignKey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	FileName    string    `gorm:"column:file_name;type:varchar(100)"`
 	RefineryId  uint      `gorm:"column:refinery_id;type:int"`
+	CountryCode string    `gorm:"column:country_code;type:varchar(50)"`
 }
 
 func (User) TableName() string {

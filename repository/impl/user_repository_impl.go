@@ -119,6 +119,7 @@ func (u *userRepositoryImpl) SetPassword(id int, password string) (model.UserMod
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	exception.PanicLogging(err)
 	user.Password = string(hashedPassword)
+	user.IsActive = true
 
 	err = u.DB.Save(&user).Error
 	exception.PanicLogging(err)
@@ -233,6 +234,7 @@ func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) 
 		PhoneNumber: model.PhoneNumber,
 		FileName:    model.FileName,
 		RefineryId:  model.RefineryId,
+		CountryCode: model.CountryCode,
 	}
 	var addresses []entity.Address
 
