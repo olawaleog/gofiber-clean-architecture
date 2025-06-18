@@ -6,6 +6,7 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/gofiber/fiber/v2"
+	"strconv"
 )
 
 type TransactionController struct {
@@ -28,6 +29,7 @@ func (c TransactionController) Route(app *fiber.App) {
 	app.Get("/v1/api/get-driver-pending-orders", c.GetDriverPendingOrder)
 	app.Get("/v1/api/get-customer-orders", c.GetCustomerOrders)
 	app.Get("/v1/api/transaction-list", c.GetTransactions)
+	app.Get("/v1/api/order/:id", c.FindById)
 
 	//app.Post("/v1/api/paystack/webook", controller.PayStackWebhook)
 }
@@ -166,6 +168,19 @@ func (c TransactionController) GetCustomerOrders(ctx *fiber.Ctx) error {
 		Code:    fiber.StatusOK,
 		Message: "Successful",
 		Data:    orders,
+		Success: true,
+	})
+}
+
+func (c TransactionController) FindById(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	parsedId, err := strconv.Atoi(id)
+	order, err := c.TransactionService.FindById(ctx.Context(), uint(parsedId))
+	exception.PanicLogging(err)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    order,
 		Success: true,
 	})
 }

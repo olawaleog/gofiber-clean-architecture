@@ -16,8 +16,19 @@ func NewPaymentService(paymentRepository *repository.PaymentRepository) service.
 }
 
 func (p PaymentServiceImpl) GetPaymentMethods(ctx context.Context, userId float64) interface{} {
+	var paymentMethodModels []model.PaymentMethodModel
 	paymentMethods := p.PaymentRepository.ListPaymentMethods(ctx, userId)
-	return paymentMethods
+	for _, paymentMethod := range paymentMethods {
+		paymentMethodModels = append(paymentMethodModels, model.PaymentMethodModel{
+			UniqueId: paymentMethod.UniqueId,
+			Name:     paymentMethod.Name,
+			Provider: paymentMethod.Provider,
+			Scheme:   paymentMethod.Scheme,
+			AuthCode: paymentMethod.AuthCode,
+			Id:       paymentMethod.ID,
+		})
+	}
+	return paymentMethodModels
 }
 
 func (p PaymentServiceImpl) InitiateMobileMoneyTransaction(ctx context.Context, data model.MobileMoneyRequestModel) interface{} {

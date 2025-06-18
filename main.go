@@ -20,8 +20,6 @@ import (
 
 var f embed.FS
 
-var embedDirStatic embed.FS
-
 // @title Go Fiber Clean Architecture
 // @version 1.0.0
 // @description Baseline project using Go Fiber
@@ -39,11 +37,14 @@ var embedDirStatic embed.FS
 // @description Authorization For JWT
 func main() {
 	//setup configuration
-	config := configuration.New(".env")
-	//config := configuration.New("/var/www/api/.env")
+	//config := configuration.New(".env")
+	common.NewLogger()
+	common.Logger.Info("Starting the application...")
+
+	config := configuration.New("/var/www/api/.env")
+
 	database := configuration.NewDatabase(config)
 	//redis := configuration.NewRedis(config)
-	common.NewLogger()
 	//e := event.New()
 
 	//repository
@@ -56,6 +57,7 @@ func main() {
 	paymentRepository := repository.NewPaymentRepository(database)
 	localGovernmentRepository := repository.NewLocalGovernmentRepository(database)
 	orderRepository := repository.NewOrderRepository(database)
+	paymentMethodRepository := repository.NewPaymentMethodRepository(database)
 
 	//rest client
 	httpRestClient := restclient.NewHttpRestClient(config)
@@ -63,13 +65,16 @@ func main() {
 	//service
 	httpService := service.NewHttpBinServiceImpl(&httpRestClient)
 	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService)
-	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &httpService, config)
+	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
 	userService := service.NewUserServiceImpl(&userRepository, &messageService)
 	truckService := service.NewTruckServiceImpl(&truckRepository, &userService)
 	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService)
 	paymentService := service.NewPaymentService(&paymentRepository)
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository)
+
+	// Initialize FCM Notification Service
+	//notificationService := service.NewNotificationService(config.Get("FCM_CREDENTIALS_PATH"))
 
 	//controller
 	transactionController := controller.NewTransactionController(&transactionService, &userService, config)

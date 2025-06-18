@@ -53,7 +53,14 @@ func (o OrderRepositoryImpl) Insert(ctx context.Context, order entity.Order) ent
 
 func (o OrderRepositoryImpl) FindById(ctx context.Context, id uint) (entity.Order, error) {
 	var order entity.Order
-	err := o.DB.WithContext(ctx).Where("id = ?", id).First(&order).Error
+	err := o.DB.WithContext(ctx).
+		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Where("tb_orders.id = ?", id).First(&order).Error
 	if err != nil {
 		return order, err
 	}

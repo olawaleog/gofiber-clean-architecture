@@ -17,7 +17,7 @@ type transactionRepositoryImpl struct {
 	*gorm.DB
 }
 
-func (t *transactionRepositoryImpl) GetAdminDashboardData(ctx context.Context) map[string]interface{} {
+func (transactionRepository *transactionRepositoryImpl) GetAdminDashboardData(ctx context.Context) map[string]interface{} {
 	var refineries []entity.Refinery
 	var orders []entity.Order
 	var users []entity.User
@@ -26,7 +26,7 @@ func (t *transactionRepositoryImpl) GetAdminDashboardData(ctx context.Context) m
 	var totalRefineryCount int
 	var customerCount int
 	var totalOrderAmount float64
-	err := t.DB.WithContext(ctx).
+	err := transactionRepository.DB.WithContext(ctx).
 		Preload("Transaction").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Where("tb_transactions.status = ?", "success").
@@ -40,7 +40,7 @@ func (t *transactionRepositoryImpl) GetAdminDashboardData(ctx context.Context) m
 		}
 		totalOrderAmount += order.Transaction.Amount
 	}
-	err = t.DB.WithContext(ctx).
+	err = transactionRepository.DB.WithContext(ctx).
 		Where("is_active = ?", true).
 		Find(&refineries).Error
 	exception.PanicLogging(err)
@@ -49,7 +49,7 @@ func (t *transactionRepositoryImpl) GetAdminDashboardData(ctx context.Context) m
 			totalRefineryCount++
 		}
 	}
-	err = t.DB.WithContext(ctx).
+	err = transactionRepository.DB.WithContext(ctx).
 		Where("is_active = ?", true).
 		Find(&users).Error
 

@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -217,7 +218,7 @@ func (u *userRepositoryImpl) ChangePassword(ctx context.Context, claims map[stri
 
 func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) {
 	var user entity.User
-	err := u.DB.Where("username = ? or phone_number = ? or email = ?", model.PhoneNumber, model.PhoneNumber, model.EmailAddress).Find(&user).Error
+	err := u.DB.Where("username = ? or phone_number = ?", model.PhoneNumber, model.PhoneNumber).Find(&user).Error
 	if user.Username != "" {
 		return entity.User{}, errors.New("User already exist")
 	}
@@ -238,15 +239,17 @@ func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) 
 	}
 	var addresses []entity.Address
 
-	addresses = append(addresses, entity.Address{
-		City:       model.City,
-		Street:     model.Street,
-		IsMain:     true,
-		PostalCode: model.PostalCode,
-		Region:     model.Region,
-	})
+	if model.Street != "" {
+		addresses = append(addresses, entity.Address{
+			City:       model.City,
+			Street:     model.Street,
+			IsMain:     false,
+			PostalCode: model.PostalCode,
+			Region:     model.Region,
+		})
+		user.Addresses = addresses
+	}
 
-	user.Addresses = addresses
 	err = u.DB.Create(&user).Error
 	exception.PanicLogging(err)
 
@@ -262,8 +265,14 @@ func (u *userRepositoryImpl) DeleteAll() {
 
 func (u *userRepositoryImpl) Authentication(ctx context.Context, username string) (entity.User, error) {
 	var userResult entity.User
+
+	//parse username to int
+	var _, ok = strconv.ParseInt(username, 10, 64)
+	if ok == nil && username[0] != '0' {
+		username = "0" + username
+	}
 	result := u.DB.WithContext(ctx).
-		Where("(tb_users.username = ?  or tb_users.phone_number = ?)and tb_users.is_active = ?", username, username, true).
+		Where("(tb_users.username = ?  or tb_users.phone_number = ?)", username, username).
 		Find(&userResult)
 	if result.RowsAffected == 0 {
 		return entity.User{}, errors.New("user not found")

@@ -13,13 +13,14 @@ import (
 	"time"
 )
 
-func NewTransactionServiceImpl(transactionRepository *repository.TransactionRepository, orderRepo *repository.OrderRepository, client *service.HttpService, config configuration.Config) service.TransactionService {
-	return &transactionServiceImpl{TransactionRepository: *transactionRepository, HttpService: *client, Config: config, OrderRepository: *orderRepo}
+func NewTransactionServiceImpl(transactionRepository *repository.TransactionRepository, orderRepo *repository.OrderRepository, paymentRepo *repository.PaymentMethodRepository, client *service.HttpService, config configuration.Config) service.TransactionService {
+	return &transactionServiceImpl{TransactionRepository: *transactionRepository, HttpService: *client, Config: config, OrderRepository: *orderRepo, PaymentMethodRepository: *paymentRepo}
 }
 
 type transactionServiceImpl struct {
 	repository.TransactionRepository
 	repository.OrderRepository
+	repository.PaymentMethodRepository
 	service.HttpService
 	configuration.Config
 }
@@ -263,9 +264,9 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 	transaction.UpdatedAt = time.Now()
 	err = t.TransactionRepository.Update(ctx, transaction)
 	exception.PanicLogging(err)
-
+	var order entity.Order
 	if transactionStatus.Data.Status == "success" {
-		order, _ := t.OrderRepository.FindByTransactionId(ctx, transaction.ID)
+		order, _ = t.OrderRepository.FindByTransactionId(ctx, transaction.ID)
 		var request model.MobileMoneyRequestModel
 		err := json.Unmarshal([]byte(transaction.RawRequest), &request)
 		exception.PanicLogging(err)
@@ -288,8 +289,20 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 			}
 			order = t.OrderRepository.Insert(ctx, order)
 		}
-	}
 
+		//save payment method
+		paymentMethod := entity.PaymentMethod{
+			UserID:   request.UserId,
+			Provider: request.Provider,
+			UniqueId: transaction.PhoneNumber,
+			Scheme:   transaction.Scheme,
+			RawData:  transaction.RawResponse,
+			AuthCode: transactionStatus.Data.Authorization.AuthorizationCode,
+		}
+
+		_, err = t.PaymentMethodRepository.Create(ctx, paymentMethod)
+	}
+	transactionStatus.Data.TransactionId = order.ID
 	return transactionStatus
 }
 
@@ -319,10 +332,16 @@ func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Cont
 	mobileMoney := make(map[string]interface{})
 	mobileMoney["phone"] = request.PhoneNumber
 	mobileMoney["provider"] = request.Provider
+	var email string
+	if request.EmailAddress == "" {
+		email = "Intelblue28@gmail.com"
+	} else {
+		email = request.EmailAddress
+	}
 
 	data := make(map[string]interface{})
 	data["amount"] = int(request.Amount * 100)
-	data["email"] = request.EmailAddress
+	data["email"] = email
 	data["currency"] = request.Currency
 	data["mobile_money"] = mobileMoney
 	paystackUrl := t.Config.Get("PAYSTACK_BASE_URL")
@@ -361,4 +380,41 @@ func (t *transactionServiceImpl) GetRefineryDashboardData(ctx context.Context, u
 	}
 
 	return refineryData, nil
+}
+func (t *transactionServiceImpl) FindById(ctx context.Context, id uint) (model.OrderModel, error) {
+	order, err := t.OrderRepository.FindById(ctx, id)
+	exception.PanicLogging(err)
+	orderModel := model.OrderModel{
+		Id:              order.ID,
+		TransactionId:   order.TransactionId,
+		Amount:          order.Amount,
+		Currency:        order.Currency,
+		WaterCost:       order.WaterCost,
+		DeliveryFee:     order.DeliveryFee,
+		DeliveryAddress: order.DeliveryAddress,
+		DeliveryPlaceId: order.DeliveryPlaceId,
+		RefineryAddress: order.RefineryAddress,
+		RefineryPlaceId: order.RefineryPlaceId,
+		RefineryId:      order.RefineryId,
+		Capacity:        order.Capacity,
+		Type:            order.Type,
+		Refinery: model.RefineryModel{
+			Id:        order.RefineryId,
+			Name:      order.Refinery.Name,
+			Address:   order.Refinery.Address,
+			Phone:     order.Refinery.Phone,
+			Email:     order.Refinery.Email,
+			Latitude:  order.Refinery.Latitude,
+			Longitude: order.Refinery.Longitude,
+			PlaceId:   order.Refinery.PlaceId,
+		},
+		User: model.UserModel{
+			Id:           order.Transaction.User.ID,
+			FirstName:    order.Transaction.User.FirstName,
+			LastName:     order.Transaction.User.LastName,
+			EmailAddress: order.Transaction.User.Email,
+			PhoneNumber:  order.Transaction.User.PhoneNumber,
+		},
+	}
+	return orderModel, nil
 }
