@@ -17,10 +17,11 @@ import (
 type RefineryServiceImpl struct {
 	repository.RefineryRepository
 	service.UserService
+	service.MessageService
 }
 
-func NewRefineryServiceImpl(repository *repository.RefineryRepository, userService *service.UserService) service.RefineryService {
-	return &RefineryServiceImpl{RefineryRepository: *repository, UserService: *userService}
+func NewRefineryServiceImpl(repository *repository.RefineryRepository, userService *service.UserService, messageService *service.MessageService) service.RefineryService {
+	return &RefineryServiceImpl{RefineryRepository: *repository, UserService: *userService, MessageService: *messageService}
 }
 
 func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.GetRefineryModel) (model.RefineryCostModel, error) {
@@ -215,10 +216,17 @@ func (r RefineryServiceImpl) CreateRefinery(ctx context.Context, refineryModel m
 		PhoneNumber:  refineryModel.Phone,
 		IsActive:     false,
 		RefineryId:   refineryData.ID,
+		CountryCode:  "+233",
 	}
 
 	_ = r.UserService.Register(context.TODO(), user)
 	exception.PanicLogging(err)
+	smsModel := model.SMSMessageModel{
+		Message:     "Hello " + user.FirstName + "," + "Your Refinery has been registered successfully.Your password is " + user.Password + ":\n visit https://aqua-wizz.app\n",
+		PhoneNumber: user.PhoneNumber,
+		CountryCode: user.CountryCode,
+	}
+	r.MessageService.SendSMS(context.TODO(), smsModel)
 	return refineryModelResponse, nil
 }
 

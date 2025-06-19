@@ -5,7 +5,6 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 )
 
 func NewHttpRestClient(config configuration.Config) client.HttpClient {
@@ -33,7 +32,7 @@ func (h RestClient) Send(ctx context.Context, url string, method string, request
 		ActiveTimeout:  60000,
 		IsFormData:     isForm,
 	}
-	err := httpClient.Execute(ctx)
-	exception.PanicLogging(err)
+	_ = httpClient.Execute(ctx)
+	//exception.PanicLogging(err)
 	return *httpClient.ResponseBody
 }

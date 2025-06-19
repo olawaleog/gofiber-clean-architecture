@@ -15,6 +15,7 @@ type MessageController struct {
 func (c MessageController) Route(app *fiber.App) {
 	app.Get("/", c.WelcomeToAquaWizz)
 	app.Get("/message-templates", c.FindAllMessageTemplates)
+	app.Get("/send-sms", c.SendSms)
 }
 
 func NewMessageController(messageService *service.MessageService) *MessageController {
@@ -65,6 +66,21 @@ func (c MessageController) WelcomeToAquaWizz(ctx *fiber.Ctx) error {
 		Code:    200,
 		Message: "Welcome to Aqua Wizz",
 		Data:    "Welcome to Aqua Wizz",
+		Success: true,
+	})
+}
+
+func (c MessageController) SendSms(ctx *fiber.Ctx) error {
+	data := model.SMSMessageModel{
+		CountryCode: "+233",
+		PhoneNumber: "0543798411",
+		Message:     "Hello from Aqua Wizz",
+	}
+	c.MessageService.SendSMS(ctx.Context(), data)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "Success",
+		Data:    nil,
 		Success: true,
 	})
 }

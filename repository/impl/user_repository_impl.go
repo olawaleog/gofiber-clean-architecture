@@ -281,7 +281,10 @@ func (u *userRepositoryImpl) Authentication(ctx context.Context, username string
 }
 
 func (u *userRepositoryImpl) SeedUser(ctx context.Context) {
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
 	model := model.UserModel{
 		Username:     "08011111111",
 		Password:     string(hashedPassword),

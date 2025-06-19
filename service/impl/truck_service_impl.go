@@ -17,8 +17,8 @@ type TruckServiceImpl struct {
 	service.MessageService
 }
 
-func NewTruckServiceImpl(r *repository.TruckRepository, u *service.UserService) service.TruckService {
-	return &TruckServiceImpl{TruckRepository: *r, UserService: *u}
+func NewTruckServiceImpl(r *repository.TruckRepository, u *service.UserService, m *service.MessageService) service.TruckService {
+	return &TruckServiceImpl{TruckRepository: *r, UserService: *u, MessageService: *m}
 }
 
 func (t TruckServiceImpl) ListAllTrucks(c context.Context) ([]model.TruckModel, error) {
@@ -29,7 +29,7 @@ func (t TruckServiceImpl) ListAllTrucks(c context.Context) ([]model.TruckModel, 
 
 func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckModel, error) {
 	yearOfmanufacture, err := strconv.Atoi(truckModel.YearOfManufacture)
-	capcity, err := strconv.Atoi(truckModel.Capacity)
+	capacity, err := strconv.Atoi(truckModel.Capacity)
 	exception.PanicLogging(err)
 
 	password, err := common.GeneratePassword(8)
@@ -43,6 +43,7 @@ func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckM
 		LastName:     truckModel.LastName,
 		PhoneNumber:  truckModel.Phone,
 		IsActive:     false,
+		CountryCode:  "+233",
 	}
 
 	userResult := t.UserService.Register(context.TODO(), user)
@@ -52,7 +53,7 @@ func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckM
 		ManufacturerModel:     truckModel.ManufacturerModel,
 		YearOfManufacture:     yearOfmanufacture,
 		PlateNumber:           truckModel.PlateNumber,
-		Capacity:              capcity,
+		Capacity:              capacity,
 		EngineNumber:          truckModel.EngineNumber,
 		IsActive:              true,
 		UserId:                userResult.ID,
@@ -62,12 +63,12 @@ func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckM
 	exception.PanicLogging(err)
 	truckModel.Id = truck.ID
 
-	//emailModel := model.EmailMessageModel{
-	//	Subject: "Truck Registration",
-	//	Message: "Hello " + truckModel.FirstName + ",\n\n" + "Your Truck has been registered successfully with the following details:\n Download  the app to complete your registration\n",
-	//	To:      truckModel.Email,
-	//}
-	//t.MessageService.SendEmail(context.TODO(), emailModel)
+	smsModel := model.SMSMessageModel{
+		Message:     "Hello " + truckModel.FirstName + "," + "Your Truck has been registered successfully.Your password is " + user.Password + ":\n Download  the app to complete your registration\n",
+		PhoneNumber: user.PhoneNumber,
+		CountryCode: userResult.CountryCode,
+	}
+	t.MessageService.SendSMS(context.TODO(), smsModel)
 
 	return truckModel, nil
 }

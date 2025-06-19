@@ -41,7 +41,8 @@ func main() {
 	common.NewLogger()
 	common.Logger.Info("Starting the application...")
 
-	config := configuration.New("/var/www/api/.env")
+	//config := configuration.New("/var/www/api/.env")
+	config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
 	//redis := configuration.NewRedis(config)
@@ -68,8 +69,8 @@ func main() {
 	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
 	userService := service.NewUserServiceImpl(&userRepository, &messageService)
-	truckService := service.NewTruckServiceImpl(&truckRepository, &userService)
-	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService)
+	truckService := service.NewTruckServiceImpl(&truckRepository, &userService, &messageService)
+	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService)
 	paymentService := service.NewPaymentService(&paymentRepository)
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository)
 
