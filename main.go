@@ -9,6 +9,7 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/controller"
 	_ "github.com/RizkiMufrizal/gofiber-clean-architecture/docs"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/jobs"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/middleware"
 	repository "github.com/RizkiMufrizal/gofiber-clean-architecture/repository/impl"
 	service "github.com/RizkiMufrizal/gofiber-clean-architecture/service/impl"
@@ -68,11 +69,11 @@ func main() {
 	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService)
 	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
-	userService := service.NewUserServiceImpl(&userRepository, &messageService)
+	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
+	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService)
 	truckService := service.NewTruckServiceImpl(&truckRepository, &userService, &messageService)
 	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService)
 	paymentService := service.NewPaymentService(&paymentRepository)
-	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository)
 
 	// Initialize FCM Notification Service
 	//notificationService := service.NewNotificationService(config.Get("FCM_CREDENTIALS_PATH"))
@@ -108,6 +109,11 @@ func main() {
 	//swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
+	// Set up cron jobs
+	cronManager := jobs.SetupCronJobs(&transactionService, &truckService)
+	cronManager.Start()
+	defer cronManager.Stop()
+	common.Logger.Info("Cron jobs scheduled and started")
 	//start app
 	common.Logger.Info("Application Started")
 

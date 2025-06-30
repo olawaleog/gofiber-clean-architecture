@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
+	"time"
 )
 
 type TransactionRepository interface {
@@ -14,4 +15,5 @@ type TransactionRepository interface {
 	FindByReference(ctx context.Context, id string) (entity.Transaction, error)
 	GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error)
 	GetAdminDashboardData(ctx context.Context) map[string]interface{}
+	FindPendingTransactionsOlderThan(ctx context.Context, duration time.Duration) ([]entity.Transaction, error)
 }

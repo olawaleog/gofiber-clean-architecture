@@ -6,6 +6,7 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"gorm.io/gorm"
+	"time"
 )
 
 type OrderRepositoryImpl struct {
@@ -22,9 +23,11 @@ func (o OrderRepositoryImpl) GetUserOrders(ctx context.Context, u uint) ([]entit
 		Preload("Transaction").
 		Preload("Refinery").
 		Preload("Transaction.User").
+		Preload("Transaction.Address").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Joins("JOIN tb_addresses ON tb_addresses.id = tb_transactions.address_id").
 		Where("tb_users.id = ?", u).
 		Order("tb_orders.id desc").
 		Find(&orders).Error
@@ -57,6 +60,7 @@ func (o OrderRepositoryImpl) FindById(ctx context.Context, id uint) (entity.Orde
 		Preload("Transaction").
 		Preload("Refinery").
 		Preload("Transaction.User").
+		Preload("Transaction.Address").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
@@ -106,4 +110,18 @@ func (o OrderRepositoryImpl) FindDriverOrdersByUserId(ctx context.Context, id fl
 	exception.PanicLogging(err)
 	return orders, nil
 
+}
+
+// Add this method to your TransactionRepositoryImpl
+func (repository *OrderRepositoryImpl) FindInitiatedOrders(ctx context.Context, duration time.Duration) ([]entity.Order, error) {
+	var orders []entity.Order
+	result := repository.DB.WithContext(ctx).
+		Where("status = ? ", 0).
+		Find(&orders)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return orders, nil
 }

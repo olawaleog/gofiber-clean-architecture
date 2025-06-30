@@ -29,10 +29,10 @@ type TransactionStatusModel struct {
 		Customer   struct {
 			CustomerCode             string      `json:"customer_code"`
 			Email                    string      `json:"email"`
-			FirstName                interface{} `json:"first_name"`
+			FirstName                string      `json:"first_name"`
 			Id                       int         `json:"id"`
 			InternationalFormatPhone interface{} `json:"international_format_phone"`
-			LastName                 interface{} `json:"last_name"`
+			LastName                 string      `json:"last_name"`
 			Metadata                 interface{} `json:"metadata"`
 			Phone                    interface{} `json:"phone"`
 			RiskAction               string      `json:"risk_action"`
@@ -52,14 +52,10 @@ type TransactionStatusModel struct {
 				Time    int    `json:"time"`
 				Type    string `json:"type"`
 			} `json:"history"`
-			Input     []interface{} `json:"input"`
-			Mobile    bool          `json:"mobile"`
-			StartTime int           `json:"start_time"`
-			Success   bool          `json:"success"`
-			TimeSpent int           `json:"time_spent"`
+			Success   bool `json:"success"`
+			TimeSpent int  `json:"time_spent"`
 		} `json:"log"`
 		Message    interface{} `json:"message"`
-		Metadata   int         `json:"metadata"`
 		OrderId    interface{} `json:"order_id"`
 		PaidAt     time.Time   `json:"paidAt"`
 		PaidAt1    time.Time   `json:"paid_at"`

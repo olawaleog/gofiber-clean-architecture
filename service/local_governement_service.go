@@ -9,4 +9,5 @@ type LocalGovernmentService interface {
 	FindAll(ctx context.Context) ([]model.LocalGovernmentModel, error)
 	ToggleLocalGovernmentActive(ctx context.Context, id string) error
 	GetPlaceSuggestion(ctx context.Context, placeString string) interface{}
+	GetPlaceDetail(ctx context.Context, placeString string) model.PlaceDetailResponse
 }

@@ -16,4 +16,6 @@ type TransactionService interface {
 	GetAdminDashboardData(ctx context.Context) (map[string]interface{}, error)
 	GetCustomerOrders(ctx context.Context, u uint) ([]model.OrderModel, error)
 	FindById(ctx context.Context, id uint) (model.OrderModel, error)
+	ProcessRecurringPayment(ctx context.Context, requestModel model.MobileMoneyRequestModel) interface{}
+	ProcessPendingTransactions(ctx context.Context, truckId uint) error
 }

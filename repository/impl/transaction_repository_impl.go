@@ -7,6 +7,7 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"gorm.io/gorm"
+	"time"
 )
 
 func NewTransactionRepositoryImpl(DB *gorm.DB) repository.TransactionRepository {
@@ -150,4 +151,18 @@ func (transactionRepository *transactionRepositoryImpl) GetRefineryDashboardData
 	}
 	return data, nil
 
+}
+
+// Add this method to your TransactionRepositoryImpl
+func (repository *transactionRepositoryImpl) FindPendingTransactionsOlderThan(ctx context.Context, duration time.Duration) ([]entity.Transaction, error) {
+	var transactions []entity.Transaction
+	result := repository.DB.WithContext(ctx).
+		Where("status = ? ", "Initiated").
+		Find(&transactions)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return transactions, nil
 }

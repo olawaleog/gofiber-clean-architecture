@@ -30,6 +30,8 @@ type Transaction struct {
 	RawRequest  string    `gorm:"column:raw_request;type:text"`
 	Capacity    string    `gorm:"column:capacity;type:varchar(50)"`
 	Type        string    `gorm:"column:type;type:varchar(50)"`
+	AddressId   uint      `gorm:"column:address_id;type:int"`
+	Address     Address   `gorm:"foreignkey:AddressId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 
 	//Order       Order     `gorm:"foreignkey:TransactionId"`
 }

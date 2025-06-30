@@ -78,3 +78,14 @@ func (t TruckServiceImpl) UpdateTruck(truck model.TruckModel) (model.TruckModel,
 	exception.PanicLogging(err)
 	return truck, nil
 }
+
+func (t TruckServiceImpl) GetActiveTruck(ctx context.Context) model.TruckModel {
+	truck, err := t.TruckRepository.GetActiveTruck(ctx)
+	if err != nil {
+		return model.TruckModel{}
+	}
+	return model.TruckModel{
+		Id: truck.ID,
+	}
+
+}

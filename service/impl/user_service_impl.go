@@ -14,13 +14,14 @@ import (
 	"strings"
 )
 
-func NewUserServiceImpl(userRepository *repository.UserRepository, messageService *service.MessageService) service.UserService {
-	return &userServiceImpl{UserRepository: *userRepository, MessageService: *messageService}
+func NewUserServiceImpl(userRepository *repository.UserRepository, messageService *service.MessageService, localGovernmentService *service.LocalGovernmentService) service.UserService {
+	return &userServiceImpl{UserRepository: *userRepository, MessageService: *messageService, LocalGovernmentService: *localGovernmentService}
 }
 
 type userServiceImpl struct {
 	repository.UserRepository
 	service.MessageService
+	service.LocalGovernmentService
 }
 
 func (u *userServiceImpl) FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) entity.User {
@@ -38,6 +39,9 @@ func (u *userServiceImpl) GetAddresses(ctx context.Context, id uint) (interface{
 }
 
 func (u *userServiceImpl) SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error) {
+	locationGeometryResult := u.LocalGovernmentService.GetPlaceDetail(ctx, request.PlaceId)
+	request.Longitude = locationGeometryResult.Result.Geometry.Location.Lng
+	request.Latitude = locationGeometryResult.Result.Geometry.Location.Lat
 	address, err := u.UserRepository.SaveAddress(ctx, request)
 	if err != nil {
 		return nil, err

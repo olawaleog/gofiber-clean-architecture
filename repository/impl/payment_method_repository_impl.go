@@ -23,7 +23,9 @@ func (p PaymentMethodRepositoryImpl) GetByUserID(ctx context.Context, userID str
 
 func (p PaymentMethodRepositoryImpl) GetByID(ctx context.Context, paymentMethodID string) (entity.PaymentMethod, error) {
 	//TODO implement me
-	panic("implement me")
+	var paymentMethod entity.PaymentMethod
+	err := p.db.Where("id = ?", paymentMethodID).First(&paymentMethod).Error
+	return paymentMethod, err
 }
 
 func (p PaymentMethodRepositoryImpl) Create(ctx context.Context, paymentMethod entity.PaymentMethod) (entity.PaymentMethod, error) {

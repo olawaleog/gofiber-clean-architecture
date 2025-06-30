@@ -72,6 +72,8 @@ func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request model.Addr
 		UserId:       request.UserId,
 		Description:  request.Description,
 		PlaceId:      request.PlaceId,
+		Longitude:    strconv.FormatFloat(request.Longitude, 'f', -1, 64),
+		Latitude:     strconv.FormatFloat(request.Latitude, 'f', -1, 64),
 	}
 
 	err = u.DB.WithContext(ctx).Create(&address).Error

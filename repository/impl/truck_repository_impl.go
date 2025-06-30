@@ -70,3 +70,9 @@ func (t TruckRepositoryImpl) UpdateTruck(truck model.TruckModel) (model.TruckMod
 	exception.PanicLogging(err)
 	return truck, nil
 }
+
+func (t TruckRepositoryImpl) GetActiveTruck(ctx context.Context) (entity.Truck, error) {
+	var truck entity.Truck
+	err := t.DB.Where("is_active = ?", true).First(&truck).Error
+	return truck, err
+}

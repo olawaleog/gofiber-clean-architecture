@@ -1,6 +1,7 @@
 package model
 
 type MobileMoneyRequestModel struct {
+	PaymentMethodId uint    `json:"paymentMethodId"`
 	Amount          float64 `json:"amount"`
 	WaterCost       float64 `json:"waterCost"`
 	DeliveryFee     float64 `json:"deliveryFee"`
@@ -16,4 +17,5 @@ type MobileMoneyRequestModel struct {
 	RefineryId      uint    `json:"refineryId"`
 	Capacity        string  `json:"capacity"`
 	Type            string  `json:"type"`
+	AddressId       uint    `json:"addressId"`
 }

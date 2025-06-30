@@ -32,7 +32,8 @@ func (h RestClient) Send(ctx context.Context, url string, method string, request
 		ActiveTimeout:  60000,
 		IsFormData:     isForm,
 	}
-	_ = httpClient.Execute(ctx)
+	res := httpClient.Execute(ctx)
+	common.Logger.Error(res)
 	//exception.PanicLogging(err)
 	return *httpClient.ResponseBody
 }

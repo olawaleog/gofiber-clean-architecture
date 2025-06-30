@@ -28,7 +28,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 	var basicCost float64
 	refineries, err := r.RefineryRepository.ListRefinery(context)
 	var selectRefinery entity.Refinery
-	shortestDistance := 100000000000000.0
+	shortestDistance := 60.0
 	exception.PanicLogging(err)
 	distanceResult := make(map[string]interface{})
 	// calculate route distance for each refinery

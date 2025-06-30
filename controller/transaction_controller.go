@@ -21,6 +21,7 @@ func NewTransactionController(transactionService *service.TransactionService, us
 
 func (c TransactionController) Route(app *fiber.App) {
 	app.Post("/v1/api/payment-mobile-money", c.InitiateMobileMoneyPayment)
+	app.Post("/v1/api/recurring-payment", c.ProcessRecurringPayment)
 	app.Get("/v1/api/payment-status/:id", c.PaymentStatus)
 	app.Get("/v1/api/refinery-dashboard-data", c.GetRefineryDashboardData)
 	app.Get("/v1/api/admin-dashboard-data", c.GetAdminDashboardData)
@@ -46,12 +47,12 @@ func (c TransactionController) InitiateMobileMoneyPayment(ctx *fiber.Ctx) error 
 	mobileMoneyRequestModel.UserId = claims["userId"].(float64)
 	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
 	response := c.TransactionService.InitiateMobileMoneyTransaction(ctx.Context(), mobileMoneyRequestModel)
-	var transactionStatus = response.(model.TransactionStatusModel)
+	//var transactionStatus = response.(model.TransactionStatusModel)
 
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Success: true,
 		Code:    fiber.StatusOK,
-		Message: transactionStatus.Message,
+		Message: "Successful",
 		Data:    response,
 	})
 
@@ -183,4 +184,24 @@ func (c TransactionController) FindById(ctx *fiber.Ctx) error {
 		Data:    order,
 		Success: true,
 	})
+}
+
+func (c TransactionController) ProcessRecurringPayment(ctx *fiber.Ctx) error {
+	var mobileMoneyRequestModel model.MobileMoneyRequestModel
+	err := ctx.BodyParser(&mobileMoneyRequestModel)
+	exception.PanicLogging(err)
+	token := ctx.Get("Authorization")
+	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+	exception.PanicLogging(err)
+	//mobileMoneyRequestModel.PhoneNumber = claims["phoneNumber"].(string)
+	mobileMoneyRequestModel.UserId = claims["userId"].(float64)
+	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
+	response := c.TransactionService.ProcessRecurringPayment(ctx.Context(), mobileMoneyRequestModel)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    response,
+		Success: true,
+	})
+
 }
