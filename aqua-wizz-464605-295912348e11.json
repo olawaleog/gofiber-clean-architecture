@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "aqua-wizz-464605",
+  "private_key_id": "295912348e1163a8e19740ccc70acd24d7118636",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCZfvrOazpc7Lng\nDq42FB+cGt5pua909n+KR+cY25rDemek4DW4+cKiNY9ZCqyy3VGmdegIFzHrCErn\njfuXgoRYAVDqBk2W+sWf9Km+DYn4Q8M3esmwtbI1PgS2UwQKxgpGRpTvBDJ9MR02\nTrVszoduxVeI6CsO4HPajlCvOAV6XVwLseGkNX5L+9D0ggLUMJeAHiB1NwfMUS2O\nBEh7u9MPKfkoG3H6TPtCxGxOrDVG+xSkIVM3gSdtmHHbtG3WoaluhJjWS7GeKjQi\nJOtarvTBeTGwNDOYmjbPhsPHdWsHQRqq5vrrJBQzDEHMghSMp+hkEtXLnCnyQROd\ngV+PQH/zAgMBAAECggEAB6Y+VX8ef3cEpFfW8rb6BEuKffZU+h02qet/Zsu64Lb+\n50aNJtS7kF3e8O8JQDirUwJZN94ADNhy8ysuOJS2h7Q5FhCOWVHR+3Cz7Na743Vt\nCxzBZF8JrIGUtolYkDjiVjI6RdcNtRN3gzdU70Ezmp+XBymay7j/zQp+ltzR2REu\nOH9OWi2/KopstB4HBHJOngLPXMnnp6c5ME/KlLFhI2Pz9mywNg+vZUrZCXFQsKkl\nV7RZdBSgg70O1b9SACHNo6dR+GMzMnWYUJ2pwiMWbwtewUV2BceNYihztf9TDQrA\nhfZUTHlHY7Lkrj4TUoME9RIA4ndaaHoR4LdWd2MHwQKBgQDO7yJutk9hUCykJ2oS\nxKIQvPe7zFq1WaeSBgjXhCZ5CSg/3KktGZGgF/vBJwKg6tSYslXjR453E6eB/n5K\ny9F10YVWQXhnltIRyqU5PY4e7J+DYI/9m4l6fXdiMjFUrT6Om923ROWC4vvGA+MQ\nRiODQ1aZaPsCRjSqHQHeDQbfIwKBgQC95ClTxepls2pGyC0rSAuzGjNMFCV/UVvx\nKYgl1oI9Rlow4MtDQF4fXMX6TKG7FU39NdsF7eda4oS5FuOyhtTECbfN0CXwEkF/\nwhoU5HgcDXVdrsgqcoRWmgdld45QA1Vanwm2z1my8OKFaggVoWpBsQrHjqmNRSwN\nGtFm9VTQ8QKBgCkN1Fz2mmUKDPE8SJUUobqEYvnFHzHfaZlUzShEtYVJxcx1sLKb\n4gJK/81gOetG64qnxtZieecx5QerP88DBLlFKhjkwEh86YxSEdl7VtjXxQXBgI+l\n7e55OdgncRYFkOWmEqSrbIU9Fwo/9yphX+ZI08N3ymS3HPeq7ZXqK7TVAoGBAK/t\nqVRR8z5SIU5+u0p0L1K6HXiI2czBZftizR6xRGzct0a9ndQq2IkZ/NpPETAxJtZH\nhSpTJZuQbgLFcCPAw3L0xfPKurtXTpO9E0jz+0uSNICdJBofivhpMB0TzSfYTsXs\nvqU+Kg6dGmEcwWy45acDDcehJvkZcxyZEhTfirshAoGBAMXnhVhHPBS2sqz8gDWw\nrtYEWL1/gmJ8cd4NNHFZ/K8A/4VLOSSPMmHy4w1b/hc96d0JwkDCTkdJxwRvYfh+\nG+bpRwke5jmtSs0qUjwfEJceLWRsXi+KH1TFe5MpT6eHIR/Ng/P/wJv45p3ZuXKW\nhO1EaAq47dphgm4NFyQaEQXr\n-----END PRIVATE KEY-----\n",
+  "client_email": "fcm-service@aqua-wizz-464605.iam.gserviceaccount.com",
+  "client_id": "102669378808126298272",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/fcm-service%40aqua-wizz-464605.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

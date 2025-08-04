@@ -35,6 +35,7 @@ func (controller UserController) Route(app *fiber.App) {
 	app.Post("/v1/api/verify-otp", controller.ValidateOtp)
 	app.Post("/v1/api/post-new-password", controller.UpdateUserPassword)
 	app.Post("/v1/api/update-profile", controller.UpdateProfile)
+	app.Post("/v1/api/update-fcm-token", controller.UpdateFcmToken)
 
 	app.Get("/v1/api/users/:id", controller.FindUserById)
 }
@@ -298,4 +299,18 @@ func (controller UserController) GetAddresses(ctx *fiber.Ctx) error {
 		Success: true,
 	})
 
+}
+
+func (controller UserController) UpdateFcmToken(ctx *fiber.Ctx) error {
+	var request model.UpdateFcmToken
+	err := ctx.BodyParser(&request)
+	exception.PanicLogging(err)
+	err = controller.UserService.UpdateFcmToken(ctx.Context(), request)
+	exception.PanicLogging(err)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "Successful",
+		Data:    nil,
+		Success: true,
+	})
 }

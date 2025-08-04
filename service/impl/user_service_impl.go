@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"fmt"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
@@ -39,14 +40,24 @@ func (u *userServiceImpl) GetAddresses(ctx context.Context, id uint) (interface{
 }
 
 func (u *userServiceImpl) SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error) {
-	locationGeometryResult := u.LocalGovernmentService.GetPlaceDetail(ctx, request.PlaceId)
-	request.Longitude = locationGeometryResult.Result.Geometry.Location.Lng
-	request.Latitude = locationGeometryResult.Result.Geometry.Location.Lat
+	if request.Longitude == 0 || request.Latitude == 0 {
+		locationGeometryResult := u.LocalGovernmentService.GetPlaceDetail(ctx, request.PlaceId)
+		request.Longitude = locationGeometryResult.Result.Geometry.Location.Lng
+		request.Latitude = locationGeometryResult.Result.Geometry.Location.Lat
+	}
+
 	address, err := u.UserRepository.SaveAddress(ctx, request)
 	if err != nil {
 		return nil, err
 	}
-	return address, nil
+	addressModel := model.AddressResponseModel{
+		Id:          address.ID,
+		Longitude:   common.ToFloat64(address.Longitude),
+		Latitude:    common.ToFloat64(address.Latitude),
+		PlaceId:     address.PlaceId,
+		Description: address.Description,
+	}
+	return addressModel, nil
 }
 
 func (u *userServiceImpl) UpdateProfile(ctx context.Context, request model.UserModel, token string) (model.UserModel, error) {
@@ -275,4 +286,9 @@ func ReplacePlaceholders(template string, placeholders map[string]string) string
 		template = strings.Replace(template, placeholder, value, -1)
 	}
 	return template
+}
+
+func (u *userServiceImpl) UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error {
+	err := u.UserRepository.UpdateFcmToken(ctx, request)
+	return err
 }

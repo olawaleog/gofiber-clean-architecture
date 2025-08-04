@@ -72,7 +72,10 @@ func (transactionRepository *transactionRepositoryImpl) GetAdminDashboardData(ct
 
 func (transactionRepository *transactionRepositoryImpl) FindByReference(ctx context.Context, id string) (entity.Transaction, error) {
 	var transaction entity.Transaction
-	result := transactionRepository.DB.Where("id = ?", id).First(&transaction)
+	result := transactionRepository.DB.Where("tb_transactions.id = ?", id).
+		Joins(" join tb_users ON tb_users.id = tb_transactions.user_id").
+		Preload("User").
+		First(&transaction)
 	if result.RowsAffected == 0 {
 		return entity.Transaction{}, errors.New("transaction Not Found")
 	}
@@ -154,9 +157,9 @@ func (transactionRepository *transactionRepositoryImpl) GetRefineryDashboardData
 }
 
 // Add this method to your TransactionRepositoryImpl
-func (repository *transactionRepositoryImpl) FindPendingTransactionsOlderThan(ctx context.Context, duration time.Duration) ([]entity.Transaction, error) {
+func (transactionRepository *transactionRepositoryImpl) FindPendingTransactionsOlderThan(ctx context.Context, duration time.Duration) ([]entity.Transaction, error) {
 	var transactions []entity.Transaction
-	result := repository.DB.WithContext(ctx).
+	result := transactionRepository.DB.WithContext(ctx).
 		Where("status = ? ", "Initiated").
 		Find(&transactions)
 

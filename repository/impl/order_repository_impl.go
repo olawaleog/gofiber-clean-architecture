@@ -106,7 +106,47 @@ func (o OrderRepositoryImpl) FindDriverOrdersByUserId(ctx context.Context, id fl
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
-		Where("truck_id = ? AND (tb_orders.status = ? or tb_orders.status = ?)", truck.ID, stage, stage+1).Find(&orders).Error
+		Where("truck_id = ? AND (tb_orders.status >= ?  AND tb_orders.status < ?)", truck.ID, 1, 4).
+		Order("tb_orders.id desc").
+		Find(&orders).Error
+	exception.PanicLogging(err)
+	return orders, nil
+
+}
+func (o OrderRepositoryImpl) FindCustomerOrdersByUserId(ctx context.Context, id float64, stage uint) ([]entity.Order, error) {
+
+	var orders []entity.Order
+	err := o.DB.WithContext(ctx).
+		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Where("tb_transactions.user_id = ? AND (tb_orders.status >= ?  AND tb_orders.status < ?)", id, 0, 4).
+		Order("tb_orders.id desc").
+		Find(&orders).Error
+	exception.PanicLogging(err)
+	return orders, nil
+
+}
+
+func (o OrderRepositoryImpl) FindCompletedDriverOrdersByUserId(ctx context.Context, id float64, stage uint) ([]entity.Order, error) {
+	var truck entity.Truck
+	err := o.DB.WithContext(ctx).
+		Where("user_id = ?", id).First(&truck).Error
+	exception.PanicLogging(err)
+	var orders []entity.Order
+	err = o.DB.WithContext(ctx).
+		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Where("truck_id = ? AND (tb_orders.status >= ? )", truck.ID, 4).
+		Order("tb_orders.id desc").
+		Find(&orders).Error
 	exception.PanicLogging(err)
 	return orders, nil
 
@@ -124,4 +164,44 @@ func (repository *OrderRepositoryImpl) FindInitiatedOrders(ctx context.Context, 
 	}
 
 	return orders, nil
+}
+
+func (o OrderRepositoryImpl) MarkOrderReadyForDelivery(id string) (entity.Order, error) {
+	var order entity.Order
+	err := o.DB.WithContext(context.Background()).
+		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Order("tb_orders.id desc").
+		Where("tb_orders.id = ?", id).
+		First(&order).Error
+	if err != nil {
+		return entity.Order{}, err
+	}
+	order.Status = 3
+	err = o.DB.Save(&order).Error
+	return order, err
+}
+
+func (o OrderRepositoryImpl) CloseOrder(id string) (entity.Order, error) {
+	var order entity.Order
+	err := o.DB.WithContext(context.Background()).
+		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Order("tb_orders.id desc").
+		Where("tb_orders.id = ?", id).
+		First(&order).Error
+	if err != nil {
+		return entity.Order{}, err
+	}
+	order.Status = 4
+	err = o.DB.Save(&order).Error
+	return order, err
 }

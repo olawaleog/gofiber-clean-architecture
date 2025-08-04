@@ -42,8 +42,8 @@ func main() {
 	common.NewLogger()
 	common.Logger.Info("Starting the application...")
 
-	//config := configuration.New("/var/www/api/.env")
-	config := configuration.New(".env")
+	config := configuration.New("/var/www/api/.env")
+	//config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
 	//redis := configuration.NewRedis(config)
@@ -65,9 +65,10 @@ func main() {
 	httpRestClient := restclient.NewHttpRestClient(config)
 
 	//service
+	notificationService := service.NewNotificationService(config.Get("FCM_CREDENTIALS_PATH"))
 	httpService := service.NewHttpBinServiceImpl(&httpRestClient)
 	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService)
-	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config)
+	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config, &notificationService)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
 	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService)
@@ -76,7 +77,6 @@ func main() {
 	paymentService := service.NewPaymentService(&paymentRepository)
 
 	// Initialize FCM Notification Service
-	//notificationService := service.NewNotificationService(config.Get("FCM_CREDENTIALS_PATH"))
 
 	//controller
 	transactionController := controller.NewTransactionController(&transactionService, &userService, config)

@@ -20,7 +20,7 @@ func SetupCronJobs(
 
 	// Add a cron job that runs every day at midnight
 	// Format: second minute hour day month weekday
-	_, err := c.AddFunc("0 */3 * * * *", func() {
+	_, err := c.AddFunc("0 */1 * * * *", func() {
 		common.Logger.Info("Running task every 5 minutes")
 		ctx := context.Background()
 

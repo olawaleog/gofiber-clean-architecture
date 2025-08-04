@@ -27,7 +27,7 @@ func NewRefineryServiceImpl(repository *repository.RefineryRepository, userServi
 func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.GetRefineryModel) (model.RefineryCostModel, error) {
 	var basicCost float64
 	refineries, err := r.RefineryRepository.ListRefinery(context)
-	var selectRefinery entity.Refinery
+	var selectRefinery entity.Refinery = refineries[0]
 	shortestDistance := 60.0
 	exception.PanicLogging(err)
 	distanceResult := make(map[string]interface{})
@@ -51,7 +51,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 
 	}
 
-	if shortestDistance > 40 {
+	if shortestDistance > 100 {
 		return model.RefineryCostModel{}, nil
 	}
 	//timeInSeconds := distanceResult["time_seconds"].(float64)

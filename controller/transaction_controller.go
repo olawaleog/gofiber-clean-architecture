@@ -20,6 +20,7 @@ func NewTransactionController(transactionService *service.TransactionService, us
 }
 
 func (c TransactionController) Route(app *fiber.App) {
+	app.Post("/v1/api/initialize-card-transaction", c.InitiateMobileMoneyPayment)
 	app.Post("/v1/api/payment-mobile-money", c.InitiateMobileMoneyPayment)
 	app.Post("/v1/api/recurring-payment", c.ProcessRecurringPayment)
 	app.Get("/v1/api/payment-status/:id", c.PaymentStatus)
@@ -28,8 +29,12 @@ func (c TransactionController) Route(app *fiber.App) {
 	app.Get("/v1/api/pending-orders", c.GetRefineryOrders)
 	app.Post("/v1/api/approve-or-reject-order", c.ApproveOrRejectOrder)
 	app.Get("/v1/api/get-driver-pending-orders", c.GetDriverPendingOrder)
+	app.Get("/v1/api/get-customer-pending-orders", c.GetCustomerPendingOrder)
+	app.Get("/v1/api/get-driver-completed-orders", c.GetDriverCompletedOrder)
 	app.Get("/v1/api/get-customer-orders", c.GetCustomerOrders)
 	app.Get("/v1/api/transaction-list", c.GetTransactions)
+	app.Get("/v1/api/mark-order-ready-for-delivery/:id", c.MarkOrderReadyForDelivery)
+	app.Get("/v1/api/close-order/:id", c.CloseOrder)
 	app.Get("/v1/api/order/:id", c.FindById)
 
 	//app.Post("/v1/api/paystack/webook", controller.PayStackWebhook)
@@ -135,6 +140,36 @@ func (c TransactionController) GetDriverPendingOrder(ctx *fiber.Ctx) error {
 	})
 }
 
+func (c TransactionController) GetCustomerPendingOrder(ctx *fiber.Ctx) error {
+	var claims map[string]interface{}
+	token := ctx.Get("Authorization")
+	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+	exception.PanicLogging(err)
+	userId := claims["userId"].(float64)
+	orders := c.TransactionService.GetCustomerPendingOrder(ctx.Context(), userId, 1)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    orders,
+		Success: true,
+	})
+}
+
+func (c TransactionController) GetDriverCompletedOrder(ctx *fiber.Ctx) error {
+	var claims map[string]interface{}
+	token := ctx.Get("Authorization")
+	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+	exception.PanicLogging(err)
+	userId := claims["userId"].(float64)
+	orders := c.TransactionService.GetDriverCompletedOrder(ctx.Context(), userId, 1)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    orders,
+		Success: true,
+	})
+}
+
 func (c TransactionController) GetTransactions(ctx *fiber.Ctx) error {
 
 	transactions := c.TransactionService.GetTransactions(ctx.Context())
@@ -204,4 +239,28 @@ func (c TransactionController) ProcessRecurringPayment(ctx *fiber.Ctx) error {
 		Success: true,
 	})
 
+}
+
+func (c TransactionController) MarkOrderReadyForDelivery(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	err := c.TransactionService.MarkOrderReadyForDelivery(id)
+	exception.PanicLogging(err)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    nil,
+		Success: true,
+	})
+}
+
+func (c TransactionController) CloseOrder(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	err := c.TransactionService.CloseOrder(id)
+	exception.PanicLogging(err)
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    nil,
+		Success: true,
+	})
 }

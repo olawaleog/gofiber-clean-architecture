@@ -13,6 +13,10 @@ type OrderRepository interface {
 	FindById(ctx context.Context, id uint) (entity.Order, error)
 	Update(ctx context.Context, order entity.Order) error
 	FindDriverOrdersByUserId(ctx context.Context, id float64, stage uint) ([]entity.Order, error)
+	FindCustomerOrdersByUserId(ctx context.Context, id float64, stage uint) ([]entity.Order, error)
+	FindCompletedDriverOrdersByUserId(ctx context.Context, id float64, stage uint) ([]entity.Order, error)
 	GetUserOrders(ctx context.Context, u uint) ([]entity.Order, error)
 	FindInitiatedOrders(ctx context.Context, duration time.Duration) ([]entity.Order, error)
+	MarkOrderReadyForDelivery(id string) (entity.Order, error)
+	CloseOrder(id string) (entity.Order, error)
 }

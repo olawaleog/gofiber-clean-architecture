@@ -22,4 +22,5 @@ type UserService interface {
 	SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error)
 	GetAddresses(ctx context.Context, id uint) (interface{}, error)
 	FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) entity.User
+	UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error
 }

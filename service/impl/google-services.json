@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "865687966138",
+    "project_id": "aqua-wizz",
+    "storage_bucket": "aqua-wizz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:865687966138:android:14552d36c7f518c4af8d83",
+        "android_client_info": {
+          "package_name": "app.aqua_wizz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgt0dvCiAmfpmFkdw5Z_UDc_c6pTwuimY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:865687966138:android:4c8ebadcb467ddb0af8d83",
+        "android_client_info": {
+          "package_name": "app.aquawizz.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgt0dvCiAmfpmFkdw5Z_UDc_c6pTwuimY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

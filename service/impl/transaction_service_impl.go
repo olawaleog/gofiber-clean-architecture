@@ -15,16 +15,32 @@ import (
 	"time"
 )
 
-func NewTransactionServiceImpl(transactionRepository *repository.TransactionRepository, orderRepo *repository.OrderRepository, paymentRepo *repository.PaymentMethodRepository, client *service.HttpService, config configuration.Config) service.TransactionService {
-	return &transactionServiceImpl{TransactionRepository: *transactionRepository, HttpService: *client, Config: config, OrderRepository: *orderRepo, PaymentMethodRepository: *paymentRepo}
-}
-
 type transactionServiceImpl struct {
 	repository.TransactionRepository
 	repository.OrderRepository
 	repository.PaymentMethodRepository
 	service.HttpService
 	configuration.Config
+	service.NotificationService // Add this line
+}
+
+// Update your constructor to accept NotificationService
+func NewTransactionServiceImpl(
+	transactionRepository *repository.TransactionRepository,
+	orderRepo *repository.OrderRepository,
+	paymentRepo *repository.PaymentMethodRepository,
+	client *service.HttpService,
+	config configuration.Config,
+	notificationService *service.NotificationService, // Add this param
+) service.TransactionService {
+	return &transactionServiceImpl{
+		TransactionRepository:   *transactionRepository,
+		HttpService:             *client,
+		Config:                  config,
+		OrderRepository:         *orderRepo,
+		PaymentMethodRepository: *paymentRepo,
+		NotificationService:     *notificationService, // Set here
+	}
 }
 
 func (t *transactionServiceImpl) ProcessRecurringPayment(ctx context.Context, request model.MobileMoneyRequestModel) interface{} {
@@ -211,6 +227,128 @@ func (t *transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, user
 	return orderModels
 }
 
+func (t *transactionServiceImpl) GetCustomerPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel {
+	orders, err := t.OrderRepository.FindCustomerOrdersByUserId(ctx, userId, stage)
+	exception.PanicLogging(err)
+	if orders == nil {
+		return nil
+	}
+	var orderModels []model.OrderModel
+	for _, order := range orders {
+		orderModels = append(orderModels, model.OrderModel{
+			Id:          order.ID,
+			Amount:      order.Amount,
+			Currency:    order.Currency,
+			WaterCost:   order.WaterCost,
+			DeliveryFee: order.DeliveryFee,
+			RefineryId:  order.RefineryId,
+			Capacity:    order.Capacity,
+			Transaction: model.TransactionModel{
+				ID:          order.Transaction.ID,
+				Email:       order.Transaction.Email,
+				PhoneNumber: order.Transaction.PhoneNumber,
+				Amount:      order.Transaction.Amount,
+				Currency:    order.Transaction.Currency,
+				PaymentID:   order.Transaction.PaymentID,
+				Provider:    order.Transaction.Provider,
+				PaymentType: order.Transaction.PaymentType,
+				Status:      order.Transaction.Status,
+				Reference:   order.Transaction.Reference,
+				DeliveryFee: order.Transaction.DeliveryFee,
+				WaterCost:   order.Transaction.WaterCost,
+			},
+			DeliveryAddress: order.DeliveryAddress,
+			DeliveryPlaceId: order.DeliveryPlaceId,
+			Status:          order.Status,
+			TransactionId:   order.TransactionId,
+			TruckId:         order.TruckId,
+			CreatedAt:       order.CreatedAt,
+			RefineryAddress: order.RefineryAddress,
+			RefineryPlaceId: order.RefineryPlaceId,
+			Refinery: model.RefineryModel{
+				Id:      order.RefineryId,
+				Name:    order.Refinery.Name,
+				Email:   order.Refinery.Email,
+				Phone:   order.Refinery.Phone,
+				Address: order.Refinery.Address,
+				Region:  order.Refinery.Region,
+				PlaceId: order.Refinery.PlaceId,
+			},
+			User: model.UserModel{
+				Username:     order.Transaction.User.Username,
+				EmailAddress: order.Transaction.User.Email,
+				PhoneNumber:  order.Transaction.User.PhoneNumber,
+				FirstName:    order.Transaction.User.FirstName,
+				LastName:     order.Transaction.User.LastName,
+			},
+		})
+
+	}
+	return orderModels
+}
+
+func (t *transactionServiceImpl) GetDriverCompletedOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel {
+	orders, err := t.OrderRepository.FindCompletedDriverOrdersByUserId(ctx, userId, stage)
+	exception.PanicLogging(err)
+	if orders == nil {
+		return nil
+	}
+	var orderModels []model.OrderModel
+	for _, order := range orders {
+		orderModels = append(orderModels, model.OrderModel{
+			Id:          order.ID,
+			Amount:      order.Amount,
+			Currency:    order.Currency,
+			WaterCost:   order.WaterCost,
+			DeliveryFee: order.DeliveryFee,
+			RefineryId:  order.RefineryId,
+			Capacity:    order.Capacity,
+			Transaction: model.TransactionModel{
+				ID:          order.Transaction.ID,
+				Email:       order.Transaction.Email,
+				PhoneNumber: order.Transaction.PhoneNumber,
+				Amount:      order.Transaction.Amount,
+				Currency:    order.Transaction.Currency,
+				PaymentID:   order.Transaction.PaymentID,
+				Provider:    order.Transaction.Provider,
+				PaymentType: order.Transaction.PaymentType,
+				Status:      order.Transaction.Status,
+				RawRequest:  order.Transaction.RawRequest,
+				RawResponse: order.Transaction.RawResponse,
+				Reference:   order.Transaction.Reference,
+				DeliveryFee: order.Transaction.DeliveryFee,
+				WaterCost:   order.Transaction.WaterCost,
+			},
+			DeliveryAddress: order.DeliveryAddress,
+			DeliveryPlaceId: order.DeliveryPlaceId,
+			Status:          order.Status,
+			TransactionId:   order.TransactionId,
+			TruckId:         order.TruckId,
+			CreatedAt:       order.CreatedAt,
+			RefineryAddress: order.RefineryAddress,
+			RefineryPlaceId: order.RefineryPlaceId,
+			Refinery: model.RefineryModel{
+				Id:      order.RefineryId,
+				Name:    order.Refinery.Name,
+				Email:   order.Refinery.Email,
+				Phone:   order.Refinery.Phone,
+				Address: order.Refinery.Address,
+				Region:  order.Refinery.Region,
+				PlaceId: order.Refinery.PlaceId,
+			},
+			User: model.UserModel{
+				Username:     order.Transaction.User.Username,
+				EmailAddress: order.Transaction.User.Email,
+				PhoneNumber:  order.Transaction.User.PhoneNumber,
+				FirstName:    order.Transaction.User.FirstName,
+				LastName:     order.Transaction.User.LastName,
+			},
+		})
+
+	}
+	return orderModels
+}
+
 func (t *transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, orderModel model.ApproveOrRejectOrderModel) (interface{}, error) {
 	order, err := t.OrderRepository.FindById(ctx, orderModel.OrderId)
 	exception.PanicLogging(err)
@@ -282,7 +420,7 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) 
 	return orderModels, nil
 }
 
-func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) model.TransactionStatusModel {
+func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) map[string]interface{} {
 	transaction, err := t.TransactionRepository.FindByReference(ctx, id)
 	exception.PanicLogging(err)
 
@@ -308,12 +446,12 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 	transaction.Scheme = transactionStatus.Data.Authorization.Brand
 	err = t.TransactionRepository.Update(ctx, transaction)
 	exception.PanicLogging(err)
-	var order entity.Order
+	var order entity.Order = entity.Order{}
+	var request model.MobileMoneyRequestModel
+	err = json.Unmarshal([]byte(transaction.RawRequest), &request)
+	exception.PanicLogging(err)
 	if transactionStatus.Data.Status == "success" {
 		order, _ = t.OrderRepository.FindByTransactionId(ctx, transaction.ID)
-		var request model.MobileMoneyRequestModel
-		err := json.Unmarshal([]byte(transaction.RawRequest), &request)
-		exception.PanicLogging(err)
 
 		if order.ID == 0 {
 			order = entity.Order{
@@ -330,6 +468,7 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 				RefineryId:      request.RefineryId,
 				Capacity:        transaction.Capacity,
 				Type:            transaction.Type,
+				WaterType:       request.Type,
 			}
 			order = t.OrderRepository.Insert(ctx, order)
 		}
@@ -354,8 +493,33 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 
 		_, err = t.PaymentMethodRepository.Create(ctx, paymentMethod)
 	}
-	transactionStatus.Data.TransactionId = order.ID
-	return transactionStatus
+	transactionStatus.Data.TransactionId = transaction.ID
+	status := map[string]interface{}{
+		"status":          transactionStatus.Data.Status,
+		"transactionId":   transaction.ID,
+		"reference":       transactionStatus.Data.Reference,
+		"amount":          transaction.Amount,
+		"currency":        transactionStatus.Data.Currency,
+		"createdAt":       transactionStatus.Data.CreatedAt,
+		"scheme":          transactionStatus.Data.Authorization.Brand,
+		"paymentType":     transactionStatus.Data.Channel,
+		"paymentId":       transaction.PaymentID,
+		"capacity":        transaction.Capacity,
+		"deliveryAddress": request.CustomerAddress,
+		"pan":             pan,
+		"waterType":       order.WaterType,
+		"orderId":         order.ID,
+		"orderStatus":     order.Status,
+		"user": model.UserModel{
+			Id:           transaction.User.ID,
+			Username:     transaction.User.Username,
+			EmailAddress: transaction.User.Email,
+			PhoneNumber:  transaction.User.PhoneNumber,
+			FirstName:    transaction.User.FirstName,
+			LastName:     transaction.User.LastName,
+		},
+	}
+	return status
 }
 
 func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Context, request model.MobileMoneyRequestModel) interface{} {
@@ -551,4 +715,64 @@ func (service *transactionServiceImpl) ProcessPendingTransactions(ctx context.Co
 	}
 
 	return nil
+}
+
+func (t *transactionServiceImpl) MarkOrderReadyForDelivery(id string) error {
+	order, err := t.OrderRepository.MarkOrderReadyForDelivery(id)
+	if err != nil {
+		return err
+	}
+	// Assume you can get the user and their FCM token from the order
+	user := order.Transaction.User
+	if user.FcmToken == "" {
+		//return errors.New("user FCM token not found")
+		return errors.New("user FCM token not found")
+	}
+
+	notification := model.NotificationModel{
+		Token:       user.FcmToken,
+		Title:       "Order Ready",
+		Body:        "Your order is ready for delivery!",
+		Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
+		ClickAction: "OPEN_ORDER_DETAILS",
+	}
+
+	ctx := context.Background()
+	err = t.NotificationService.SendToDevice(ctx, notification)
+	//if err != nil {
+	//	return err
+	//}
+
+	return nil
+
+}
+
+func (t *transactionServiceImpl) CloseOrder(id string) error {
+	order, err := t.OrderRepository.CloseOrder(id)
+	if err != nil {
+		return err
+	}
+	// Assume you can get the user and their FCM token from the order
+	user := order.Transaction.User
+	if user.FcmToken == "" {
+		//return errors.New("user FCM token not found")
+		return errors.New("user FCM token not found")
+	}
+
+	notification := model.NotificationModel{
+		Token:       user.FcmToken,
+		Title:       "Order Completed",
+		Body:        "Your order has been completed successfully!",
+		Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "order_completed"},
+		ClickAction: "OPEN_ORDER_DETAILS",
+	}
+
+	ctx := context.Background()
+	err = t.NotificationService.SendToDevice(ctx, notification)
+	//if err != nil {
+	//	return err
+	//}
+
+	return nil
+
 }

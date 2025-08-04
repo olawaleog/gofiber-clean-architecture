@@ -16,6 +16,7 @@ type User struct {
 	FileName    string    `gorm:"column:file_name;type:varchar(100)"`
 	RefineryId  uint      `gorm:"column:refinery_id;type:int"`
 	CountryCode string    `gorm:"column:country_code;type:varchar(50)"`
+	FcmToken    string    `gorm:"column:fcm_token;type:text"`
 }
 
 func (User) TableName() string {

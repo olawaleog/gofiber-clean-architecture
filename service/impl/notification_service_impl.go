@@ -64,7 +64,8 @@ func (n *notificationServiceImpl) SendToDevice(ctx context.Context, notification
 		}
 	}
 
-	_, err = client.Send(ctx, message)
+	response, err := client.Send(ctx, message)
+	fmt.Println(response)
 	return err
 }
 

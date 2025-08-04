@@ -33,7 +33,9 @@ type AddressModel struct {
 }
 
 type AddressResponseModel struct {
-	Id          uint   `json:"id"`
-	Description string `json:"description"`
-	PlaceId     string `json:"placeId"`
+	Id          uint    `json:"id"`
+	Description string  `json:"description"`
+	PlaceId     string  `json:"placeId"`
+	Longitude   float64 `json:"longitude"`
+	Latitude    float64 `json:"latitude"`
 }

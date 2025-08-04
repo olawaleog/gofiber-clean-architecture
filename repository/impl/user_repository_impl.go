@@ -45,22 +45,34 @@ func (u *userRepositoryImpl) FindAllAddress(ctx context.Context, id uint) ([]mod
 			Description: address.Description,
 			PlaceId:     address.PlaceId,
 			Id:          address.ID,
+			Longitude:   toFloat64(address.Longitude),
+			Latitude:    toFloat64(address.Latitude),
 		})
 	}
 	return result, nil
 }
 
-func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error) {
+func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request model.AddressModel) (entity.Address, error) {
 	var user entity.User
 	err := u.DB.WithContext(ctx).Where("id = ?", request.UserId).First(&user).Error
 	if err != nil {
-		return nil, errors.New("user not found")
+		return entity.Address{}, errors.New("user not found")
 	}
-	streetNumber := request.Terms[0].Value
+
+	// Check for existing address by PlaceId or Description
+	var existingAddress entity.Address
+	err = u.DB.WithContext(ctx).Where("user_id = ? AND (place_id = ? OR description = ?)", request.UserId, request.PlaceId, request.Description).First(&existingAddress).Error
+	if err == nil {
+		return existingAddress, nil
+	} else if err != gorm.ErrRecordNotFound {
+		return entity.Address{}, err
+	}
+
+	streetNumber := "" //request.Terms[0].Value
 	city := ""
-	street := request.Terms[1].Value
-	postalCode := request.Terms[0].Value
-	region := request.Terms[2].Value
+	street := "  "   //request.Terms[1].Value
+	postalCode := "" //r equest.Terms[0].Value
+	region := ""     // request.Terms[2].Value
 
 	address := entity.Address{
 		StreetNumber: streetNumber,
@@ -334,4 +346,23 @@ func (u *userRepositoryImpl) GetClaimsFromToken(tokenString string) (map[string]
 	}
 
 	return nil, fmt.Errorf("invalid token")
+}
+
+func (u *userRepositoryImpl) UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error {
+	var user entity.User
+	err := u.DB.WithContext(ctx).Where("id = ?", request.Id).First(&user).Error
+	if err != nil {
+		return err
+	}
+	user.FcmToken = request.FcmToken
+	err = u.DB.Save(&user).Error
+
+	return err
+}
+func toFloat64(value string) float64 {
+	floatValue, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0.0 // or handle the error as needed
+	}
+	return floatValue
 }

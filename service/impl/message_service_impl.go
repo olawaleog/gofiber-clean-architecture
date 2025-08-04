@@ -41,6 +41,7 @@ func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageM
 	} else {
 		body["to"] = data.PhoneNumber
 	}
+	body["from"] = "AquaWizz"
 
 	url := m.config.Get("AFRICAS_TALKING_BASE_URL") + "/version1/messaging"
 	m.HttpService.PostMethod(ctx, url, "POST", &body, &headers, true)
