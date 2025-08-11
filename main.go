@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client/restclient"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
@@ -42,8 +43,8 @@ func main() {
 	common.NewLogger()
 	common.Logger.Info("Starting the application...")
 
-	config := configuration.New("/var/www/api/.env")
-	//config := configuration.New(".env")
+	//config := configuration.New("/var/www/api/.env")
+	config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
 	//redis := configuration.NewRedis(config)
@@ -76,7 +77,8 @@ func main() {
 	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService)
 	paymentService := service.NewPaymentService(&paymentRepository)
 
-	// Initialize FCM Notification Service
+	// Google Maps Service
+	mapsService := service.NewGoogleMapsService(config)
 
 	//controller
 	transactionController := controller.NewTransactionController(&transactionService, &userService, config)
@@ -87,6 +89,9 @@ func main() {
 	refineryController := controller.NewRefineryController(&refineryService, config)
 	paymentController := controller.NewPaymentController(&paymentService, &userService, config)
 	localGovernmentController := controller.NewLocalGovernmentAreaController(&localGovernmentService)
+
+	// Google Maps Controller
+	mapsController := controller.NewGoogleMapsController(mapsService)
 
 	//setup fiber
 	app := fiber.New(configuration.NewFiberConfiguration())
@@ -105,6 +110,8 @@ func main() {
 	refineryController.Route(app)
 	paymentController.Route(app)
 	localGovernmentController.Route(app)
+	// Register Google Maps endpoints
+	mapsController.RegisterRoutes(app)
 
 	//swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
