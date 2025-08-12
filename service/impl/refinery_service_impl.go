@@ -50,6 +50,8 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		if distance < shortestDistance {
 			selectRefinery = refineries[i]
 			shortestDistance = distance
+		} else {
+			continue
 		}
 
 	}
@@ -58,7 +60,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		return model.RefineryCostModel{}, nil
 	}
 	//timeInSeconds := distanceResult["time_seconds"].(float64)
-	distance := distanceResult["distance_km"].(float64)
+	//distance := distanceResult["distance_km"].(float64)
 	if request.Type == "domestic" {
 		basicCost = selectRefinery.DomesticCostPerThousandLitre
 	} else {
@@ -67,26 +69,26 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 
 	// calculate cost
 	TenThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 10) + (distance * 1) + (1 * 2),
+		TotalCost:   (basicCost * 10) + (shortestDistance * 1) + (1 * 2),
 		WaterCost:   basicCost * 10,
-		DeliveryFee: distance * 1,
+		DeliveryFee: shortestDistance * 1,
 	}
 
 	TwentyThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 20) + (distance * 1) + (2 * 2),
+		TotalCost:   (basicCost * 20) + (shortestDistance * 1) + (2 * 2),
 		WaterCost:   basicCost * 20,
-		DeliveryFee: distance * 1,
+		DeliveryFee: shortestDistance * 1,
 	}
 
 	ThirtyThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 30) + (distance * 1) + (3 * 2),
+		TotalCost:   (basicCost * 30) + (shortestDistance * 1) + (3 * 2),
 		WaterCost:   basicCost * 30,
-		DeliveryFee: distance * 1,
+		DeliveryFee: shortestDistance * 1,
 	}
 	FortyThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 40) + (distance * 1) + (4 * 2),
+		TotalCost:   (basicCost * 40) + (shortestDistance * 1) + (4 * 2),
 		WaterCost:   basicCost * 40,
-		DeliveryFee: distance * 1,
+		DeliveryFee: shortestDistance * 1,
 	}
 
 	response := model.RefineryCostModel{
@@ -100,7 +102,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		ThirtyThousandLitre:  ThirtyThousand,
 		FortyThousandLitre:   FortyThousand,
 		CostPerThousandLitre: basicCost,
-		Distance:             distance,
+		Distance:             shortestDistance,
 	}
 
 	return response, nil
