@@ -74,7 +74,7 @@ func main() {
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
 	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService)
 	truckService := service.NewTruckServiceImpl(&truckRepository, &userService, &messageService)
-	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService)
+	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService, config)
 	paymentService := service.NewPaymentService(&paymentRepository)
 
 	// Google Maps Service

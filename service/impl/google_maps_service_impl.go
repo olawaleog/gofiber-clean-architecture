@@ -19,6 +19,7 @@ import (
 type GoogleMapsService interface {
 	SuggestPlaces(ctx context.Context, input string) ([]model.PlaceSuggestion, error)
 	ReverseGeocode(ctx context.Context, lat, lng string) (*model.GeocodeResult, error)
+	GetPlaceDetail(ctx context.Context, placeID string) (*model.PlaceDetailResponse, error)
 }
 
 type googleMapsService struct {
@@ -62,7 +63,7 @@ func (g *googleMapsService) signURL(rawURL string) (string, error) {
 }
 
 func (g *googleMapsService) SuggestPlaces(ctx context.Context, input string) ([]model.PlaceSuggestion, error) {
-	urlStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/autocomplete/json?input=%s&key=%s", input, g.apiKey)
+	urlStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/autocomplete/json?input=%s&key=%s&components=country:gh|country:ng&radius=1000000&types=geocode", input, g.apiKey)
 	signedURL, err := g.signURL(urlStr)
 	if err != nil {
 		return nil, err
@@ -135,4 +136,27 @@ func (g *googleMapsService) ReverseGeocode(ctx context.Context, lat, lng string)
 		PlaceID: data.Results[0].PlaceID,
 		Address: data.Results[0].FormattedAddress,
 	}, nil
+}
+
+func (g *googleMapsService) GetPlaceDetail(ctx context.Context, placeID string) (*model.PlaceDetailResponse, error) {
+	urlStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/details/json?place_id=%s&key=%s", placeID, g.apiKey)
+	signedURL, err := g.signURL(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.Get(signedURL)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var detail model.PlaceDetailResponse
+	if err := json.Unmarshal(bodyBytes, &detail); err != nil {
+		return nil, err
+	}
+	return &detail, nil
 }

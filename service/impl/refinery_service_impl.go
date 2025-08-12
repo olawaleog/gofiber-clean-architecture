@@ -4,24 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
-	"io/ioutil"
-	"net/http"
 )
 
 type RefineryServiceImpl struct {
 	repository.RefineryRepository
 	service.UserService
 	service.MessageService
+	configuration.Config
 }
 
-func NewRefineryServiceImpl(repository *repository.RefineryRepository, userService *service.UserService, messageService *service.MessageService) service.RefineryService {
-	return &RefineryServiceImpl{RefineryRepository: *repository, UserService: *userService, MessageService: *messageService}
+func NewRefineryServiceImpl(repository *repository.RefineryRepository, userService *service.UserService, messageService *service.MessageService, configuration configuration.Config) service.RefineryService {
+	return &RefineryServiceImpl{RefineryRepository: *repository, UserService: *userService, MessageService: *messageService, Config: configuration}
 }
 
 func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.GetRefineryModel) (model.RefineryCostModel, error) {
@@ -39,7 +42,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		if !refineries[i].HasDomesticWaterSupply && request.Type == "domestic" {
 			continue
 		}
-		distanceResult = CalculateDistance(refineries[i], request.PlaceId)
+		distanceResult = r.CalculateDistance(refineries[i], request.PlaceId)
 		if len(distanceResult) == 0 {
 			continue
 		}
@@ -103,8 +106,8 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 	return response, nil
 }
 
-func CalculateDistance(origin entity.Refinery, destinationPlaceID string) map[string]interface{} {
-	apiKey := "AIzaSyAFYfTvR_8IzpQb7DHMl9HA6h1kskcz2ok" // Replace with your actual API key
+func (r *RefineryServiceImpl) CalculateDistance(origin entity.Refinery, destinationPlaceID string) map[string]interface{} {
+	apiKey := r.Config.Get("GOOGLE_MAPS_API_KEY") // Replace with your actual API key
 	url := ""
 	if origin.PlaceId == "" {
 		url = fmt.Sprintf(

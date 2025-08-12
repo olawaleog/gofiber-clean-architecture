@@ -9,6 +9,7 @@ import (
 type GoogleMapsService interface {
 	SuggestPlaces(ctx context.Context, input string) ([]model.PlaceSuggestion, error)
 	ReverseGeocode(ctx context.Context, lat, lng string) (*model.GeocodeResult, error)
+	GetPlaceDetail(ctx context.Context, id string) (*model.PlaceDetailResponse, error)
 }
 
 type googleMapsService struct {

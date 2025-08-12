@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/gofiber/fiber/v2"
 )
@@ -16,6 +17,7 @@ func NewGoogleMapsController(mapsService service.GoogleMapsService) *GoogleMapsC
 func (g *GoogleMapsController) RegisterRoutes(router fiber.Router) {
 	router.Get("/v1/api/googlemaps/suggest", g.PlaceSuggestion)
 	router.Get("/v1/api/googlemaps/reverse-geocode", g.ReverseGeocode)
+	router.Get("/v1/api/googlemaps/place-detail", g.PlaceDetail)
 }
 
 func (g *GoogleMapsController) PlaceSuggestion(c *fiber.Ctx) error {
@@ -27,7 +29,12 @@ func (g *GoogleMapsController) PlaceSuggestion(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(suggestions)
+	return c.JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "Success",
+		Data:    suggestions,
+		Success: true,
+	})
 }
 
 func (g *GoogleMapsController) ReverseGeocode(c *fiber.Ctx) error {
@@ -40,5 +47,27 @@ func (g *GoogleMapsController) ReverseGeocode(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(result)
+	return c.JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "Success",
+		Data:    result,
+		Success: true,
+	})
+}
+
+func (g *GoogleMapsController) PlaceDetail(c *fiber.Ctx) error {
+	placeID := c.Query("place_id")
+	if placeID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "place_id query param required"})
+	}
+	detail, err := g.mapsService.GetPlaceDetail(c.Context(), placeID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "Success",
+		Data:    detail,
+		Success: true,
+	})
 }
