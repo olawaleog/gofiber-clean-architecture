@@ -2,9 +2,10 @@ package impl
 
 import (
 	"context"
+	"fmt"
+
 	"firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
-	"fmt"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
@@ -188,3 +189,12 @@ func (n *notificationServiceImpl) UnsubscribeFromTopic(ctx context.Context, toke
 	_, err = client.UnsubscribeFromTopic(ctx, tokens, topic)
 	return err
 }
+
+//func (n *notificationServiceImpl) Send(ctx context.Context, notificationModel model.NotificationModel) error {
+//	if notificationModel.Token == "" {
+//		//return errors.New("user FCM token not found")
+//		return errors.New("user FCM token not found")
+//	}
+//	err := n.SendToDevice(ctx, notificationModel)
+//	return err
+//}

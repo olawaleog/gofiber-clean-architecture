@@ -6,6 +6,8 @@ type PlaceSuggestion struct {
 }
 
 type GeocodeResult struct {
-	PlaceID string `json:"place_id"`
-	Address string `json:"address"`
+	PlaceID   string `json:"place_id"`
+	Address   string `json:"address"`
+	Longitude string `json:"longitude"`
+	Latitude  string `json:"latitude"`
 }

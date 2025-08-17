@@ -101,10 +101,7 @@ func (g *googleMapsService) SuggestPlaces(ctx context.Context, input string) ([]
 
 func (g *googleMapsService) ReverseGeocode(ctx context.Context, lat, lng string) (*model.GeocodeResult, error) {
 	urlStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&key=%s", lat, lng, g.apiKey)
-	//signedURL, err := g.signURL(urlStr)
-	//if err != nil {
-	//	return nil, err
-	//}
+
 	resp, err := http.Get(urlStr)
 	if err != nil {
 		return nil, err
@@ -133,8 +130,10 @@ func (g *googleMapsService) ReverseGeocode(ctx context.Context, lat, lng string)
 		return nil, fmt.Errorf("no results found")
 	}
 	return &model.GeocodeResult{
-		PlaceID: data.Results[0].PlaceID,
-		Address: data.Results[0].FormattedAddress,
+		PlaceID:   data.Results[0].PlaceID,
+		Address:   data.Results[0].FormattedAddress,
+		Longitude: lng,
+		Latitude:  lat,
 	}, nil
 }
 

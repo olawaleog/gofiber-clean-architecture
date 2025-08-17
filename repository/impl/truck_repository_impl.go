@@ -2,12 +2,13 @@ package impl
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type TruckRepositoryImpl struct {
@@ -60,7 +61,10 @@ func (t TruckRepositoryImpl) Create(truck entity.Truck) (entity.Truck, error) {
 
 func (t TruckRepositoryImpl) UpdateTruck(truck model.TruckModel) (model.TruckModel, error) {
 	var truckUpdate entity.Truck
-	err := t.DB.Where("id = ?", truck.Id).First(&truckUpdate).Error
+	err := t.DB.Where("id = ?", truck.Id).
+		Preload("User").
+		Joins("JOIN tb_users ON tb_users.id = tb_trucks.user_id").
+		First(&truckUpdate).Error
 	exception.PanicLogging(err)
 	capacity, err := strconv.Atoi(truck.Capacity)
 	truckUpdate.Capacity = capacity
@@ -73,6 +77,9 @@ func (t TruckRepositoryImpl) UpdateTruck(truck model.TruckModel) (model.TruckMod
 
 func (t TruckRepositoryImpl) GetActiveTruck(ctx context.Context) (entity.Truck, error) {
 	var truck entity.Truck
-	err := t.DB.Where("is_active = ?", true).First(&truck).Error
+	err := t.DB.Where("tb_trucks.is_active = ?", true).
+		Preload("User").
+		Joins("JOIN tb_users ON tb_users.id = tb_trucks.user_id").
+		First(&truck).Error
 	return truck, err
 }

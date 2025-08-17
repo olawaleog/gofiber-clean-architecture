@@ -2,11 +2,12 @@ package impl
 
 import (
 	"context"
+	"time"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"gorm.io/gorm"
-	"time"
 )
 
 type OrderRepositoryImpl struct {
@@ -156,7 +157,11 @@ func (o OrderRepositoryImpl) FindCompletedDriverOrdersByUserId(ctx context.Conte
 func (repository *OrderRepositoryImpl) FindInitiatedOrders(ctx context.Context, duration time.Duration) ([]entity.Order, error) {
 	var orders []entity.Order
 	result := repository.DB.WithContext(ctx).
-		Where("status = ? ", 0).
+		Preload("Transaction").
+		Preload("Transaction.User").
+		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Where("tb_orders.status = ? ", 0).
 		Find(&orders)
 
 	if result.Error != nil {
@@ -172,9 +177,13 @@ func (o OrderRepositoryImpl) MarkOrderReadyForDelivery(id string) (entity.Order,
 		Preload("Transaction").
 		Preload("Refinery").
 		Preload("Transaction.User").
+		//Preload("Truck").
+		//Preload("Truck.User").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		//Joins("JOIN tb_trucks ON tb_trucks.id = tb_orders.truck_id").
+		//Joins("JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id").
 		Order("tb_orders.id desc").
 		Where("tb_orders.id = ?", id).
 		First(&order).Error

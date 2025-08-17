@@ -2,10 +2,11 @@ package jobs
 
 import (
 	"context"
+	"time"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/robfig/cron/v3"
-	"time"
 )
 
 // Create a new cron job manager
@@ -31,7 +32,7 @@ func SetupCronJobs(
 		}
 
 		// Example: Check for pending transactions older than 24 hours
-		err := (*transactionService).ProcessPendingTransactions(ctx, activeTruck.Id)
+		err := (*transactionService).ProcessPendingTransactions(ctx, activeTruck)
 		if err != nil {
 			common.Logger.Error("Error in daily transaction processing: " + err.Error())
 		}

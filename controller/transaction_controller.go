@@ -1,12 +1,13 @@
 package controller
 
 import (
+	"strconv"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/gofiber/fiber/v2"
-	"strconv"
 )
 
 type TransactionController struct {
@@ -36,6 +37,7 @@ func (c TransactionController) Route(app *fiber.App) {
 	app.Get("/v1/api/mark-order-ready-for-delivery/:id", c.MarkOrderReadyForDelivery)
 	app.Get("/v1/api/close-order/:id", c.CloseOrder)
 	app.Get("/v1/api/order/:id", c.FindById)
+	app.Post("/v1/api/submit-rating", c.SubmitRating)
 
 	//app.Post("/v1/api/paystack/webook", controller.PayStackWebhook)
 }
@@ -260,6 +262,27 @@ func (c TransactionController) CloseOrder(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,
 		Message: "Successful",
+		Data:    nil,
+		Success: true,
+	})
+}
+
+func (c TransactionController) SubmitRating(ctx *fiber.Ctx) error {
+	var ratingModel model.RatingModel
+	err := ctx.BodyParser(&ratingModel)
+	exception.PanicLogging(err)
+
+	token := ctx.Get("Authorization")
+	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+	exception.PanicLogging(err)
+	ratingModel.UserId = uint(claims["userId"].(float64))
+
+	err = c.TransactionService.SubmitRating(ctx.Context(), ratingModel)
+	exception.PanicLogging(err)
+
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Rating submitted successfully",
 		Data:    nil,
 		Success: true,
 	})

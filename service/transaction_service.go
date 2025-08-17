@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 )
 
@@ -18,8 +19,9 @@ type TransactionService interface {
 	GetCustomerOrders(ctx context.Context, u uint) ([]model.OrderModel, error)
 	FindById(ctx context.Context, id uint) (model.OrderModel, error)
 	ProcessRecurringPayment(ctx context.Context, requestModel model.MobileMoneyRequestModel) interface{}
-	ProcessPendingTransactions(ctx context.Context, truckId uint) error
+	ProcessPendingTransactions(ctx context.Context, truckId model.TruckModel) error
 	MarkOrderReadyForDelivery(id string) error
 	GetDriverCompletedOrder(ctx context.Context, id float64, i uint) []model.OrderModel
 	CloseOrder(id string) error
+	SubmitRating(ctx context.Context, ratingModel model.RatingModel) error
 }

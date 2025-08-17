@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
@@ -11,8 +14,6 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
-	"strconv"
-	"time"
 )
 
 type transactionServiceImpl struct {
@@ -691,9 +692,9 @@ func (t *transactionServiceImpl) SendToPayStack(ctx context.Context, url string,
 }
 
 // Add this method to your TransactionServiceImpl
-func (service *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context, truckId uint) error {
+func (t *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context, truck model.TruckModel) error {
 	// Get transactions that have been pending for more than 24 hours
-	initiatedOrders, err := service.OrderRepository.FindInitiatedOrders(ctx, time.Hour*24)
+	initiatedOrders, err := t.OrderRepository.FindInitiatedOrders(ctx, time.Hour*24)
 	if err != nil {
 		return err
 	}
@@ -702,9 +703,34 @@ func (service *transactionServiceImpl) ProcessPendingTransactions(ctx context.Co
 
 		order.Status = 1
 		order.UpdatedAt = time.Now()
-		order.TruckId = truckId
+		order.TruckId = truck.Id
 
-		err := service.OrderRepository.Update(ctx, order)
+		err := t.OrderRepository.Update(ctx, order)
+
+		user := order.Transaction.User
+		if user.FcmToken != "" {
+			//return errors.New("user FCM token not found")
+
+			err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
+				Token:       user.FcmToken,
+				Title:       "Order Ready",
+				Body:        "An order has been assigned to you!",
+				Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
+				ClickAction: "OPEN_ORDER_DETAILS",
+			})
+		}
+
+		driver := truck.User
+		if driver.Token != "" {
+			err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
+				Token:       driver.Token,
+				Title:       "Order Assigned",
+				Body:        "An order has been assigned to you!",
+				Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
+				ClickAction: "OPEN_ORDER_DETAILS",
+			})
+		}
+
 		if err != nil {
 			common.Logger.Error("Failed to update transaction " + ": " + err.Error())
 			// Continue processing other transactions even if one fails
@@ -724,21 +750,28 @@ func (t *transactionServiceImpl) MarkOrderReadyForDelivery(id string) error {
 	}
 	// Assume you can get the user and their FCM token from the order
 	user := order.Transaction.User
-	if user.FcmToken == "" {
+	if user.FcmToken != "" {
 		//return errors.New("user FCM token not found")
-		return errors.New("user FCM token not found")
-	}
 
-	notification := model.NotificationModel{
-		Token:       user.FcmToken,
-		Title:       "Order Ready",
-		Body:        "Your order is ready for delivery!",
-		Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
-		ClickAction: "OPEN_ORDER_DETAILS",
+		err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
+			Token:       user.FcmToken,
+			Title:       "Order Ready",
+			Body:        "Your order is ready for delivery!",
+			Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
+			ClickAction: "OPEN_ORDER_DETAILS",
+		})
 	}
+	//driver := order.Truck.User
+	//if driver.FcmToken != "" {
+	//	err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
+	//		Token:       user.FcmToken,
+	//		Title:       "Order Assigned",
+	//		Body:        "An order has been assigned to you!",
+	//		Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
+	//		ClickAction: "OPEN_ORDER_DETAILS",
+	//	})
+	//}
 
-	ctx := context.Background()
-	err = t.NotificationService.SendToDevice(ctx, notification)
 	//if err != nil {
 	//	return err
 	//}
@@ -774,5 +807,30 @@ func (t *transactionServiceImpl) CloseOrder(id string) error {
 	//}
 
 	return nil
+}
 
+func (t *transactionServiceImpl) SubmitRating(ctx context.Context, ratingModel model.RatingModel) error {
+	if ratingModel.OrderId == 0 {
+		return errors.New("order ID is required")
+	}
+	if ratingModel.Rating < 1 || ratingModel.Rating > 5 {
+		return errors.New("rating must be between 1 and 5")
+	}
+
+	order, err := t.OrderRepository.FindById(ctx, ratingModel.OrderId)
+	if err != nil {
+		return err
+	}
+	if order.ID == 0 {
+		return errors.New("order not found")
+	}
+
+	order.Rating = ratingModel.Rating
+	order.Review = ratingModel.Review
+	err = t.OrderRepository.Update(ctx, order)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

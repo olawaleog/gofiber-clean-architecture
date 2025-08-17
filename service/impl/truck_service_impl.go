@@ -2,13 +2,14 @@ package impl
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
-	"strconv"
 )
 
 type TruckServiceImpl struct {
@@ -86,6 +87,10 @@ func (t TruckServiceImpl) GetActiveTruck(ctx context.Context) model.TruckModel {
 	}
 	return model.TruckModel{
 		Id: truck.ID,
+		User: model.UserModel{
+			Id:    truck.User.ID,
+			Token: truck.User.FcmToken,
+		},
 	}
 
 }

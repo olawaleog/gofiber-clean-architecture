@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 )
 
@@ -20,4 +21,5 @@ type NotificationService interface {
 
 	// UnsubscribeFromTopic unsubscribes devices from a topic
 	UnsubscribeFromTopic(ctx context.Context, tokens []string, topic string) error
+	//Send(ctx context.Context, fcmToken string, title string, message string, data map[string]string) error
 }
