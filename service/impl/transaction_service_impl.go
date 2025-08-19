@@ -104,8 +104,8 @@ func (t *transactionServiceImpl) GetCustomerOrders(ctx context.Context, u uint) 
 				Provider:    order.Transaction.Provider,
 				PaymentType: order.Transaction.PaymentType,
 				Status:      order.Transaction.Status,
-				RawRequest:  order.Transaction.RawRequest,
-				RawResponse: order.Transaction.RawResponse,
+				//RawRequest:  order.Transaction.RawRequest,
+				//RawResponse: order.Transaction.RawResponse,
 				Reference:   order.Transaction.Reference,
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
@@ -118,7 +118,7 @@ func (t *transactionServiceImpl) GetCustomerOrders(ctx context.Context, u uint) 
 			},
 			Status:        order.Status,
 			TransactionId: order.TransactionId,
-			TruckId:       order.TruckId,
+			TruckId:       *order.TruckId,
 			CreatedAt:     order.CreatedAt,
 			//UserId:       u,
 			//UserName:     "",
@@ -192,8 +192,8 @@ func (t *transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, user
 				Provider:    order.Transaction.Provider,
 				PaymentType: order.Transaction.PaymentType,
 				Status:      order.Transaction.Status,
-				RawRequest:  order.Transaction.RawRequest,
-				RawResponse: order.Transaction.RawResponse,
+				//RawRequest:  order.Transaction.RawRequest,
+				//RawResponse: order.Transaction.RawResponse,
 				Reference:   order.Transaction.Reference,
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
@@ -202,7 +202,7 @@ func (t *transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, user
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         order.TruckId,
+			TruckId:         *order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			RefineryAddress: order.RefineryAddress,
 			RefineryPlaceId: order.RefineryPlaceId,
@@ -262,7 +262,7 @@ func (t *transactionServiceImpl) GetCustomerPendingOrder(ctx context.Context, us
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         order.TruckId,
+			TruckId:         *order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			RefineryAddress: order.RefineryAddress,
 			RefineryPlaceId: order.RefineryPlaceId,
@@ -314,8 +314,8 @@ func (t *transactionServiceImpl) GetDriverCompletedOrder(ctx context.Context, us
 				Provider:    order.Transaction.Provider,
 				PaymentType: order.Transaction.PaymentType,
 				Status:      order.Transaction.Status,
-				RawRequest:  order.Transaction.RawRequest,
-				RawResponse: order.Transaction.RawResponse,
+				//RawRequest:  order.Transaction.RawRequest,
+				//RawResponse: order.Transaction.RawResponse,
 				Reference:   order.Transaction.Reference,
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
@@ -324,7 +324,7 @@ func (t *transactionServiceImpl) GetDriverCompletedOrder(ctx context.Context, us
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         order.TruckId,
+			TruckId:         *order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			RefineryAddress: order.RefineryAddress,
 			RefineryPlaceId: order.RefineryPlaceId,
@@ -361,9 +361,9 @@ func (t *transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, order
 	}
 
 	if orderModel.Action == "approve" {
-		order.Status += 1
+		order.Status = 2
 		if orderModel.TruckId != 0 {
-			order.TruckId = orderModel.TruckId
+			order.TruckId = &orderModel.TruckId
 		}
 	} else {
 		order.Status -= 1
@@ -403,8 +403,8 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) 
 				Provider:    order.Transaction.Provider,
 				PaymentType: order.Transaction.PaymentType,
 				Status:      order.Transaction.Status,
-				RawRequest:  order.Transaction.RawRequest,
-				RawResponse: order.Transaction.RawResponse,
+				//RawRequest:  order.Transaction.RawRequest,
+				//RawResponse: order.Transaction.RawResponse,
 				Reference:   order.Transaction.Reference,
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
@@ -413,7 +413,7 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) 
 			RefineryAddress: order.RefineryAddress,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         order.TruckId,
+			TruckId:         *order.TruckId,
 			CreatedAt:       order.CreatedAt,
 		})
 	}
@@ -636,8 +636,8 @@ func (t *transactionServiceImpl) FindById(ctx context.Context, id uint) (model.O
 			PaymentID:   order.Transaction.PaymentID,
 			PaymentType: order.Transaction.PaymentType,
 			Status:      order.Transaction.Status,
-			RawRequest:  order.Transaction.RawRequest,
-			RawResponse: order.Transaction.RawResponse,
+			//RawRequest:  order.Transaction.RawRequest,
+			//RawResponse: order.Transaction.RawResponse,
 			WaterCost:   order.Transaction.WaterCost,
 			DeliveryFee: order.Transaction.DeliveryFee,
 
@@ -677,7 +677,8 @@ func (t *transactionServiceImpl) FindById(ctx context.Context, id uint) (model.O
 			EmailAddress: order.Transaction.User.Email,
 			PhoneNumber:  order.Transaction.User.PhoneNumber,
 		},
-		Status: order.Status,
+		Status:      order.Status,
+		OrderStatus: order.Status,
 	}
 	return orderModel, nil
 }
@@ -703,7 +704,7 @@ func (t *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context,
 
 		order.Status = 1
 		order.UpdatedAt = time.Now()
-		order.TruckId = truck.Id
+		order.TruckId = &truck.Id
 
 		err := t.OrderRepository.Update(ctx, order)
 
@@ -714,7 +715,7 @@ func (t *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context,
 			err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
 				Token:       user.FcmToken,
 				Title:       "Order Ready",
-				Body:        "An order has been assigned to you!",
+				Body:        "Your order has been confirm and is processing!",
 				Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
 				ClickAction: "OPEN_ORDER_DETAILS",
 			})

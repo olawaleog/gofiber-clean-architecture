@@ -13,6 +13,7 @@ type OrderModel struct {
 	RefineryAddress string           `json:"refineryAddress"`
 	RefineryId      uint             `json:"refineryId"`
 	Status          uint             `json:"status"`
+	OrderStatus     uint             `json:"orderStatus"`
 	TruckId         uint             `json:"truckId"`
 	Capacity        string           `json:"capacity"`
 	Id              uint             `json:"id"`
