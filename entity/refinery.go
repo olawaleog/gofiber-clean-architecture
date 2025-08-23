@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Refinery struct {
@@ -17,6 +18,9 @@ type Refinery struct {
 	PlaceId                        string    `gorm:"column:place_id;type:text"`
 	RawLocationData                string    `gorm:"column:raw_location_data;type:text"`
 	Region                         string    `gorm:"column:region;type:text"`
+	Country                        string    `gorm:"column:country;type:text"`
+	Currency                       string    `gorm:"column:currency;type:text"`
+	CurrencySymbol                 string    `gorm:"column:currency_symbol;type:text"`
 	DomesticCostPerThousandLitre   float64   `gorm:"column:domestic_cost_per_thousand_litre;type:numeric(10,2)"`
 	IndustrialCostPerThousandLitre float64   `gorm:"column:industrial_cost_per_thousand_litre;type:numeric(10,2)"`
 	Longitude                      string    `gorm:"column:longitude;type:text"`

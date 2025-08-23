@@ -43,8 +43,8 @@ func main() {
 	common.NewLogger()
 	common.Logger.Info("Starting the application...")
 
-	config := configuration.New("/var/www/api/.env")
-	//config := configuration.New(".env")
+	//config := configuration.New("/var/www/api/.env")
+	config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
 	//redis := configuration.NewRedis(config)

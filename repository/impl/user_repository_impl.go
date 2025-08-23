@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
@@ -12,9 +16,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func NewUserRepositoryImpl(DB *gorm.DB) repository.UserRepository {
@@ -286,7 +287,7 @@ func (u *userRepositoryImpl) Authentication(ctx context.Context, username string
 		username = "0" + username
 	}
 	result := u.DB.WithContext(ctx).
-		Where("(tb_users.username = ?  or tb_users.phone_number = ?)", username, username).
+		Where("(tb_users.username = ?  or tb_users.phone_number = ? or tb_users.email = ? )", username, username, username).
 		Find(&userResult)
 	if result.RowsAffected == 0 {
 		return entity.User{}, errors.New("user not found")
@@ -295,13 +296,13 @@ func (u *userRepositoryImpl) Authentication(ctx context.Context, username string
 }
 
 func (u *userRepositoryImpl) SeedUser(ctx context.Context) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
-	if err != nil {
-		return
-	}
-	model := model.UserModel{
+	//hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	//if err != nil {
+	//	return
+	//}
+	adminModel := model.UserModel{
 		Username:     "08011111111",
-		Password:     string(hashedPassword),
+		Password:     "admin",
 		FirstName:    "Admin",
 		LastName:     "User",
 		EmailAddress: "walenewera@gmail.com",
@@ -311,14 +312,41 @@ func (u *userRepositoryImpl) SeedUser(ctx context.Context) {
 	}
 	var user entity.User
 	_ = u.DB.WithContext(ctx).
-		Where("(tb_users.username = ?  or tb_users.phone_number = ?) ", model.Username, model.PhoneNumber).
+		Where("(tb_users.username = ?  or tb_users.phone_number = ?) ", adminModel.Username, adminModel.PhoneNumber).
 		First(&user).Error
 	//exception.PanicLogging(err)
 
 	if user.FirstName == "" {
-		_, err := u.Create(model)
+		_, err := u.Create(adminModel)
 		if err == nil {
 			common.Logger.Info("Admin user created successfully")
+		}
+	}
+
+	// Seed refinery_admin user attached to the only active refinery
+	var activeRefinery entity.Refinery
+	err := u.DB.WithContext(ctx).Where("is_active = ?", true).First(&activeRefinery).Error
+	if err == nil && activeRefinery.ID != 0 {
+		refineryAdminModel := model.UserModel{
+			Username:     "08099999999",
+			Password:     "Vnp-1234",
+			FirstName:    "Refinery",
+			LastName:     "Admin",
+			EmailAddress: "refineryadmin@example.com",
+			PhoneNumber:  "08099999999",
+			Role:         "refinery_admin",
+			IsActive:     true,
+			RefineryId:   activeRefinery.ID,
+		}
+		var refineryAdmin entity.User
+		_ = u.DB.WithContext(ctx).
+			Where("(tb_users.username = ?  or tb_users.phone_number = ?)", refineryAdminModel.Username, refineryAdminModel.PhoneNumber).
+			First(&refineryAdmin).Error
+		if refineryAdmin.FirstName == "" {
+			_, err := u.Create(refineryAdminModel)
+			if err == nil {
+				common.Logger.Info("Refinery admin user created successfully")
+			}
 		}
 	}
 

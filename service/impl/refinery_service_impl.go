@@ -188,6 +188,9 @@ func (r RefineryServiceImpl) CreateRefinery(ctx context.Context, refineryModel m
 		HasDomesticWaterSupply:         refineryModel.HasDomesticWaterSupply,
 		HasIndustrialWaterSupply:       refineryModel.HasIndustrialWaterSupply,
 		IsActive:                       true,
+		Country:                        refineryModel.Country,
+		Currency:                       refineryModel.Currency,
+		CurrencySymbol:                 refineryModel.CurrencySymbol,
 	}
 
 	refineryData, err := r.RefineryRepository.Create(ctx, refinery)

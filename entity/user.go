@@ -4,11 +4,11 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	Username    string    `gorm:"column:username;type:varchar(100)"`
+	Username    string    `gorm:"column:username;type:varchar(100);uniqueIndex"`
 	FirstName   string    `gorm:"column:first_name;type:varchar(100)"`
 	LastName    string    `gorm:"column:last_name;type:varchar(100)"`
-	PhoneNumber string    `gorm:"column:phone_number;type:varchar(15)"`
-	Email       string    `gorm:"column:email;type:varchar(100)"`
+	PhoneNumber string    `gorm:"column:phone_number;type:varchar(15);uniqueIndex"`
+	Email       string    `gorm:"column:email;type:varchar(100);uniqueIndex"`
 	Password    string    `gorm:"column:password;type:varchar(200)"`
 	IsActive    bool      `gorm:"column:is_active;type:boolean"`
 	UserRole    string    `gorm:"column:user_roles;type:varchar(100)"`

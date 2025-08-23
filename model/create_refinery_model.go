@@ -21,4 +21,7 @@ type CreateRefineryModel struct {
 	Website                        string    `json:"website"`
 	FirstName                      string    `json:"firstName"`
 	LastName                       string    `json:"lastName"`
+	Country                        string    `json:"country"`
+	Currency                       string    `json:"currency"`
+	CurrencySymbol                 string    `json:"currencySymbol"`
 }

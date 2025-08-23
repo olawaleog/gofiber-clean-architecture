@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
-	"io/ioutil"
-	"net/http"
 )
 
 type localGovernmentServiceImpl struct {
@@ -36,7 +37,7 @@ func (l localGovernmentServiceImpl) ToggleLocalGovernmentActive(ctx context.Cont
 }
 
 func (l localGovernmentServiceImpl) GetPlaceSuggestion(ctx context.Context, placeString string) interface{} {
-	googleUrl := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/autocomplete/json?input=%v&key=AIzaSyAFYfTvR_8IzpQb7DHMl9HA6h1kskcz2ok&language=en", placeString)
+	googleUrl := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/autocomplete/json?input=%v&key=%v&language=en", placeString, l.Config.Get("GOOGLE_MAPS_API_KEY"))
 	response, err := http.Get(googleUrl)
 	exception.PanicLogging(err)
 	responseData, err := ioutil.ReadAll(response.Body)
@@ -49,7 +50,7 @@ func (l localGovernmentServiceImpl) GetPlaceSuggestion(ctx context.Context, plac
 }
 
 func (l localGovernmentServiceImpl) GetPlaceDetail(ctx context.Context, placeString string) model.PlaceDetailResponse {
-	googleUrl := fmt.Sprintf("%v/maps/api/place/details/json?place_id=%v&fields=geometry&key=%v&language=en", l.Config.Get("GOOGLE_MAP_BASE_URL"), placeString, l.Config.Get("GOOGLE_MAP_API_KEY"))
+	googleUrl := fmt.Sprintf("%v/maps/api/place/details/json?place_id=%v&fields=geometry&key=%v&language=en", l.Config.Get("GOOGLE_MAPS_BASE_URL"), placeString, l.Config.Get("GOOGLE_MAPS_API_KEY"))
 	response, err := http.Get(googleUrl)
 	exception.PanicLogging(err)
 	responseData, err := ioutil.ReadAll(response.Body)
