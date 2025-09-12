@@ -47,8 +47,12 @@ func main() {
 	config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
-	//redis := configuration.NewRedis(config)
-	//e := event.New()
+	redis := configuration.NewRedis(config)
+	rabbitMQ := configuration.NewRabbitMQ(config)
+
+	// Initialize Redis and RabbitMQ services
+	redisService := service.NewRedisService(redis)
+	rabbitMQService := service.NewRabbitMQService(rabbitMQ, "aqua_wizz_exchange", "topic")
 
 	//repository
 	messageTemplateRepository := repository.NewMessageTemplateRepositoryImpl(database)
@@ -121,11 +125,26 @@ func main() {
 	cronManager.Start()
 	defer cronManager.Stop()
 	common.Logger.Info("Cron jobs scheduled and started")
+
+	// Set up example RabbitMQ subscription
+	err := rabbitMQService.SubscribeToTopic("notifications", func(message []byte) error {
+		common.Logger.Info("Received notification message: " + string(message))
+		return nil
+	})
+	if err != nil {
+		common.Logger.Error("Failed to subscribe to notifications topic: " + err.Error())
+	}
+
+	// Properly close connections when app terminates
+	defer func() {
+		rabbitMQService.Close()
+	}()
+
 	//start app
 	common.Logger.Info("Application Started")
 
 	userService.SeedUser(context.TODO())
 
-	err := app.Listen(config.Get("SERVER.PORT"))
+	err = app.Listen(config.Get("SERVER.PORT"))
 	exception.PanicLogging(err)
 }
