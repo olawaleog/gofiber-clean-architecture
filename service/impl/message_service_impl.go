@@ -3,6 +3,8 @@ package impl
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
@@ -11,7 +13,6 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"gopkg.in/gomail.v2"
-	"strconv"
 )
 
 func NewMessageServiceImpl(config configuration.Config, messageTemplateRepository repository.MessageTemplateRepository, httpService *service.HttpService, rabbitMQService *RabbitMQService) service.MessageService {
@@ -108,23 +109,23 @@ func (m *messageServiceImpl) UpdateMessageTemplate(ctx context.Context, template
 	exception.PanicLogging(err)
 }
 
-func (m *messageServiceImpl) SendEmail(context context.Context, model model.EmailMessageModel) {
+func (m *messageServiceImpl) SendEmail(context context.Context, emailModel model.EmailMessageModel) {
 	// Create a queued email message
 	queuedEmail := model.QueuedEmailMessage{
-		To:      model.To,
-		Subject: model.Subject,
-		Message: model.Message,
+		To:      emailModel.To,
+		Subject: emailModel.Subject,
+		Message: emailModel.Message,
 		From:    m.config.Get("MAIL_FROM"),
 	}
 
 	// Publish to RabbitMQ
 	err := m.rabbitMQService.PublishMessage("email.send", queuedEmail)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Failed to queue email to %s: %s", model.To, err.Error()))
+		common.Logger.Error(fmt.Sprintf("Failed to queue email to %s: %s", emailModel.To, err.Error()))
 		// Fall back to synchronous sending if publishing fails
 		m.sendEmailDirect(queuedEmail)
 	} else {
-		common.Logger.Info(fmt.Sprintf("Email to %s queued successfully", model.To))
+		common.Logger.Info(fmt.Sprintf("Email to %s queued successfully", emailModel.To))
 	}
 	return
 }

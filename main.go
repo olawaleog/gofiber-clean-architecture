@@ -47,11 +47,11 @@ func main() {
 	config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
-	redis := configuration.NewRedis(config)
+	//redis := configuration.NewRedis(config)
 	rabbitMQ := configuration.NewRabbitMQ(config)
 
 	// Initialize Redis and RabbitMQ services
-	redisService := service.NewRedisService(redis)
+	//redisService := service.NewRedisService(redis)
 	rabbitMQService := service.NewRabbitMQService(rabbitMQ, "aqua_wizz_exchange", "topic")
 
 	//repository
