@@ -538,7 +538,7 @@ func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Cont
 	data := make(map[string]interface{})
 	data["amount"] = int(request.Amount * 100)
 	data["email"] = email
-	data["currency"] = request.Currency
+	data["currency"] = transaction.Currency
 	var paystackUrl string
 	if request.Provider != "card" {
 		paystackUrl = t.Config.Get("PAYSTACK_BASE_URL") + "/charge"
@@ -596,6 +596,7 @@ func (t *transactionServiceImpl) insertTransaction(ctx context.Context, request 
 		Capacity:    request.Capacity,
 		Type:        request.Type,
 		AddressId:   request.AddressId,
+		RefineryId:  request.RefineryId,
 	}
 	transaction = t.TransactionRepository.Insert(ctx, transaction)
 	return transaction

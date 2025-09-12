@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Transaction struct {
@@ -32,6 +33,8 @@ type Transaction struct {
 	Type        string    `gorm:"column:type;type:varchar(50)"`
 	AddressId   uint      `gorm:"column:address_id;type:int"`
 	Address     Address   `gorm:"foreignkey:AddressId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	RefineryId  uint      `gorm:"column:refinery_id;type:int"`
+	Refinery    Refinery  `gorm:"foreignkey:RefineryId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 
 	//Order       Order     `gorm:"foreignkey:TransactionId"`
 }
