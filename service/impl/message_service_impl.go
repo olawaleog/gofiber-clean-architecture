@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"fmt"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
@@ -13,14 +14,20 @@ import (
 	"strconv"
 )
 
-func NewMessageServiceImpl(config configuration.Config, messageTemplateRepository repository.MessageTemplateRepository, client *service.HttpService) service.MessageService {
-	return &messageServiceImpl{config: config, MessageTemplateRepository: messageTemplateRepository, HttpService: *client}
+func NewMessageServiceImpl(config configuration.Config, messageTemplateRepository repository.MessageTemplateRepository, httpService *service.HttpService, rabbitMQService *RabbitMQService) service.MessageService {
+	return &messageServiceImpl{
+		config:                    config,
+		MessageTemplateRepository: messageTemplateRepository,
+		HttpService:               *httpService,
+		rabbitMQService:           rabbitMQService,
+	}
 }
 
 type messageServiceImpl struct {
 	service.HttpService
 	config configuration.Config
 	repository.MessageTemplateRepository
+	rabbitMQService *RabbitMQService
 }
 
 func (m *messageServiceImpl) GenerateOneTimePassword(context context.Context, uid uint) (entity.OneTimePassword, error) {
@@ -102,15 +109,37 @@ func (m *messageServiceImpl) UpdateMessageTemplate(ctx context.Context, template
 }
 
 func (m *messageServiceImpl) SendEmail(context context.Context, model model.EmailMessageModel) {
+	// Create a queued email message
+	queuedEmail := model.QueuedEmailMessage{
+		To:      model.To,
+		Subject: model.Subject,
+		Message: model.Message,
+		From:    m.config.Get("MAIL_FROM"),
+	}
+
+	// Publish to RabbitMQ
+	err := m.rabbitMQService.PublishMessage("email.send", queuedEmail)
+	if err != nil {
+		common.Logger.Error(fmt.Sprintf("Failed to queue email to %s: %s", model.To, err.Error()))
+		// Fall back to synchronous sending if publishing fails
+		m.sendEmailDirect(queuedEmail)
+	} else {
+		common.Logger.Info(fmt.Sprintf("Email to %s queued successfully", model.To))
+	}
+	return
+}
+
+// sendEmailDirect sends an email directly as a fallback mechanism
+func (m *messageServiceImpl) sendEmailDirect(email model.QueuedEmailMessage) {
 	message := gomail.NewMessage()
 
 	// Set email headers
-	message.SetHeader("From", m.config.Get("MAIL_FROM"))
-	message.SetHeader("To", model.To)
-	message.SetHeader("Subject", model.Subject)
+	message.SetHeader("From", email.From)
+	message.SetHeader("To", email.To)
+	message.SetHeader("Subject", email.Subject)
 
 	// Set email body
-	message.SetBody("text/html", model.Message)
+	message.SetBody("text/html", email.Message)
 
 	// Set up the SMTP
 	port, _ := strconv.Atoi(m.config.Get("MAIL_PORT"))
@@ -118,10 +147,8 @@ func (m *messageServiceImpl) SendEmail(context context.Context, model model.Emai
 
 	// Send the email
 	if err := dialer.DialAndSend(message); err != nil {
-		fmt.Println("Error:", err)
-		panic(err)
+		common.Logger.Error(fmt.Sprintf("Error sending email directly: %s", err.Error()))
 	} else {
-		fmt.Println("Email sent successfully!")
+		common.Logger.Info("Email sent directly successfully!")
 	}
-	return
 }

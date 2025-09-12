@@ -72,7 +72,9 @@ func main() {
 	//service
 	notificationService := service.NewNotificationService(config.Get("FCM_CREDENTIALS_PATH"))
 	httpService := service.NewHttpBinServiceImpl(&httpRestClient)
-	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService)
+	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService, rabbitMQService)
+	// Initialize the email consumer service
+	emailConsumerService := service.NewEmailConsumerService(config, rabbitMQService)
 	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config, &notificationService)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
@@ -126,8 +128,14 @@ func main() {
 	defer cronManager.Stop()
 	common.Logger.Info("Cron jobs scheduled and started")
 
+	// Start the email consumer service
+	err := emailConsumerService.StartConsumer()
+	if err != nil {
+		common.Logger.Error("Failed to start email consumer service: " + err.Error())
+	}
+
 	// Set up example RabbitMQ subscription
-	err := rabbitMQService.SubscribeToTopic("notifications", func(message []byte) error {
+	err = rabbitMQService.SubscribeToTopic("notifications", func(message []byte) error {
 		common.Logger.Info("Received notification message: " + string(message))
 		return nil
 	})
