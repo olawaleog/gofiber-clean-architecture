@@ -235,7 +235,7 @@ func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) 
 	var user entity.User
 	err := u.DB.Where("username = ? or phone_number = ?", model.PhoneNumber, model.PhoneNumber).Find(&user).Error
 	if user.Username != "" {
-		return entity.User{}, errors.New("User already exist")
+		return entity.User{}, errors.New("user already exist")
 	}
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(model.Password), bcrypt.DefaultCost)
 	exception.PanicLogging(err)

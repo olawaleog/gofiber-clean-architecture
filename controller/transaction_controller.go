@@ -173,12 +173,31 @@ func (c TransactionController) GetDriverCompletedOrder(ctx *fiber.Ctx) error {
 }
 
 func (c TransactionController) GetTransactions(ctx *fiber.Ctx) error {
+	// Get pagination parameters from the query string
+	pageStr := ctx.Query("page", "1")    // default to page 1 if not provided
+	limitStr := ctx.Query("limit", "10") // default to 10 items per page if not provided
 
-	transactions := c.TransactionService.GetTransactions(ctx.Context())
+	// Convert string parameters to integers
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
+	// Get transactions with pagination
+	transactions, totalCount := c.TransactionService.GetTransactionsPaginated(ctx.Context(), page, limit)
+
+	// Create pagination response
+	paginatedResponse := model.NewPaginationResponse(transactions, page, limit, totalCount)
+
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,
 		Message: "Successful",
-		Data:    transactions,
+		Data:    paginatedResponse,
 		Success: true,
 	})
 }

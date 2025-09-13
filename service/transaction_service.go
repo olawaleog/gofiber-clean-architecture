@@ -15,6 +15,7 @@ type TransactionService interface {
 	GetDriverPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel
 	GetCustomerPendingOrder(ctx context.Context, userId float64, stage uint) []model.OrderModel
 	GetTransactions(ctx context.Context) []model.TransactionModel
+	GetTransactionsPaginated(ctx context.Context, page, limit int) ([]model.TransactionModel, int64)
 	GetAdminDashboardData(ctx context.Context) (map[string]interface{}, error)
 	GetCustomerOrders(ctx context.Context, u uint) ([]model.OrderModel, error)
 	FindById(ctx context.Context, id uint) (model.OrderModel, error)

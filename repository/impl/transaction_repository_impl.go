@@ -3,11 +3,12 @@ package impl
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"gorm.io/gorm"
-	"time"
 )
 
 func NewTransactionRepositoryImpl(DB *gorm.DB) repository.TransactionRepository {
@@ -168,4 +169,24 @@ func (transactionRepository *transactionRepositoryImpl) FindPendingTransactionsO
 	}
 
 	return transactions, nil
+}
+
+func (transactionRepository *transactionRepositoryImpl) FindAllPaginated(ctx context.Context, page, limit int) ([]entity.Transaction, int64) {
+	var transactions []entity.Transaction
+	var totalCount int64
+
+	// Calculate offset based on page and limit
+	offset := (page - 1) * limit
+
+	// Get total count first
+	transactionRepository.DB.WithContext(ctx).Model(&entity.Transaction{}).Count(&totalCount)
+
+	// Then get paginated results
+	transactionRepository.DB.WithContext(ctx).
+		Order("created_at desc").
+		Limit(limit).
+		Offset(offset).
+		Find(&transactions)
+
+	return transactions, totalCount
 }
