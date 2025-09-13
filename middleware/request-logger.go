@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/gofiber/fiber/v2"
 	"strings"
 )
@@ -30,13 +30,13 @@ func RequestLogger(c *fiber.Ctx) error {
 	} else {
 		body = ""
 	}
-	common.Logger.Infof("Request: %s %s %s %s", c.Method(), c.Path(), c.IP(), body)
+	logger.Logger.Infof("Request: %s %s %s %s", c.Method(), c.Path(), c.IP(), body)
 
 	// Call the next handler
 	err := c.Next()
 
 	// Log response details
-	common.Logger.Infof("Response: %d %s", c.Response().StatusCode(), c.Response().Body())
+	logger.Logger.Infof("Response: %d %s", c.Response().StatusCode(), c.Response().Body())
 
 	return err
 }

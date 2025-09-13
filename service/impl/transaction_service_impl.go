@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
@@ -734,7 +734,7 @@ func (t *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context,
 		}
 
 		if err != nil {
-			common.Logger.Error("Failed to update transaction " + ": " + err.Error())
+			logger.Logger.Error("Failed to update transaction " + ": " + err.Error())
 			// Continue processing other transactions even if one fails
 			continue
 		}

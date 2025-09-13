@@ -3,12 +3,13 @@ package impl
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"strconv"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"gopkg.in/gomail.v2"
-	"strconv"
 )
 
 // EmailConsumerServiceImpl implements the EmailConsumerService interface
@@ -27,16 +28,16 @@ func NewEmailConsumerService(config configuration.Config, rabbitMQService *Rabbi
 
 // StartConsumer starts consuming email messages from the queue
 func (e *EmailConsumerServiceImpl) StartConsumer() error {
-	common.Logger.Info("Starting email consumer service...")
+	logger.Logger.Info("Starting email consumer service...")
 
 	// Subscribe to the email.send routing key
 	err := e.rabbitMQService.SubscribeToTopic("email.send", e.ProcessEmail)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Failed to start email consumer: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Failed to start email consumer: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info("Email consumer service started successfully")
+	logger.Logger.Info("Email consumer service started successfully")
 	return nil
 }
 
@@ -46,11 +47,11 @@ func (e *EmailConsumerServiceImpl) ProcessEmail(emailData []byte) error {
 	var queuedEmail model.QueuedEmailMessage
 	err := json.Unmarshal(emailData, &queuedEmail)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error parsing email data: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error parsing email data: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Processing email to %s with subject: %s", queuedEmail.To, queuedEmail.Subject))
+	logger.Logger.Info(fmt.Sprintf("Processing email to %s with subject: %s", queuedEmail.To, queuedEmail.Subject))
 
 	// Create a new email message
 	message := gomail.NewMessage()
@@ -78,10 +79,10 @@ func (e *EmailConsumerServiceImpl) ProcessEmail(emailData []byte) error {
 
 	// Send the email
 	if err := dialer.DialAndSend(message); err != nil {
-		common.Logger.Error(fmt.Sprintf("Error sending email: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error sending email: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Email to %s sent successfully", queuedEmail.To))
+	logger.Logger.Info(fmt.Sprintf("Email to %s sent successfully", queuedEmail.To))
 	return nil
 }

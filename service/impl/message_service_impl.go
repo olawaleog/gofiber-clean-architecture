@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
@@ -121,11 +121,11 @@ func (m *messageServiceImpl) SendEmail(context context.Context, emailModel model
 	// Publish to RabbitMQ
 	err := m.rabbitMQService.PublishMessage("email.send", queuedEmail)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Failed to queue email to %s: %s", emailModel.To, err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Failed to queue email to %s: %s", emailModel.To, err.Error()))
 		// Fall back to synchronous sending if publishing fails
 		m.sendEmailDirect(queuedEmail)
 	} else {
-		common.Logger.Info(fmt.Sprintf("Email to %s queued successfully", emailModel.To))
+		logger.Logger.Info(fmt.Sprintf("Email to %s queued successfully", emailModel.To))
 	}
 	return
 }
@@ -148,8 +148,8 @@ func (m *messageServiceImpl) sendEmailDirect(email model.QueuedEmailMessage) {
 
 	// Send the email
 	if err := dialer.DialAndSend(message); err != nil {
-		common.Logger.Error(fmt.Sprintf("Error sending email directly: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error sending email directly: %s", err.Error()))
 	} else {
-		common.Logger.Info("Email sent directly successfully!")
+		logger.Logger.Info("Email sent directly successfully!")
 	}
 }

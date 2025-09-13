@@ -1,13 +1,14 @@
-package common
+package logger
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var Logger *logrus.Logger

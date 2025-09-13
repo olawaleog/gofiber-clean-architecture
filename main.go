@@ -5,12 +5,12 @@ import (
 	"embed"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client/restclient"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/controller"
 	_ "github.com/RizkiMufrizal/gofiber-clean-architecture/docs"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/jobs"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/middleware"
 	repository "github.com/RizkiMufrizal/gofiber-clean-architecture/repository/impl"
 	service "github.com/RizkiMufrizal/gofiber-clean-architecture/service/impl"
@@ -40,8 +40,8 @@ var f embed.FS
 func main() {
 	//setup configuration
 	//config := configuration.New(".env")
-	common.NewLogger()
-	common.Logger.Info("Starting the application...")
+	logger.NewLogger()
+	logger.Logger.Info("Starting the application...")
 
 	//config := configuration.New("/var/www/api/.env")
 	config := configuration.New(".env")
@@ -126,21 +126,21 @@ func main() {
 	cronManager := jobs.SetupCronJobs(&transactionService, &truckService)
 	cronManager.Start()
 	defer cronManager.Stop()
-	common.Logger.Info("Cron jobs scheduled and started")
+	logger.Logger.Info("Cron jobs scheduled and started")
 
 	// Start the email consumer service
 	err := emailConsumerService.StartConsumer()
 	if err != nil {
-		common.Logger.Error("Failed to start email consumer service: " + err.Error())
+		logger.Logger.Error("Failed to start email consumer service: " + err.Error())
 	}
 
 	// Set up example RabbitMQ subscription
 	err = rabbitMQService.SubscribeToTopic("notifications", func(message []byte) error {
-		common.Logger.Info("Received notification message: " + string(message))
+		logger.Logger.Info("Received notification message: " + string(message))
 		return nil
 	})
 	if err != nil {
-		common.Logger.Error("Failed to subscribe to notifications topic: " + err.Error())
+		logger.Logger.Error("Failed to subscribe to notifications topic: " + err.Error())
 	}
 
 	// Properly close connections when app terminates
@@ -149,7 +149,7 @@ func main() {
 	}()
 
 	//start app
-	common.Logger.Info("Application Started")
+	logger.Logger.Info("Application Started")
 
 	userService.SeedUser(context.TODO())
 

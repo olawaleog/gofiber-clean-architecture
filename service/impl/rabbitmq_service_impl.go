@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/streadway/amqp"
 )
 
@@ -46,7 +46,7 @@ func NewRabbitMQService(conn *amqp.Connection, exchangeName string, exchangeType
 func (s *RabbitMQService) PublishMessage(routingKey string, message interface{}) error {
 	body, err := json.Marshal(message)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error marshaling message: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error marshaling message: %s", err.Error()))
 		return err
 	}
 
@@ -62,11 +62,11 @@ func (s *RabbitMQService) PublishMessage(routingKey string, message interface{})
 		})
 
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error publishing message: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error publishing message: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Published message to %s with routing key %s", s.ExchangeName, routingKey))
+	logger.Logger.Info(fmt.Sprintf("Published message to %s with routing key %s", s.ExchangeName, routingKey))
 	return nil
 }
 
@@ -83,7 +83,7 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 		nil,       // arguments
 	)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error declaring queue: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error declaring queue: %s", err.Error()))
 		return err
 	}
 
@@ -96,7 +96,7 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 		nil,            // arguments
 	)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error binding queue: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error binding queue: %s", err.Error()))
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 		nil,        // args
 	)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error consuming queue: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error consuming queue: %s", err.Error()))
 		return err
 	}
 
@@ -120,7 +120,7 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 		for msg := range msgs {
 			err := handler(msg.Body)
 			if err != nil {
-				common.Logger.Error(fmt.Sprintf("Error handling message: %s", err.Error()))
+				logger.Logger.Error(fmt.Sprintf("Error handling message: %s", err.Error()))
 				// Negative acknowledgement, message will be requeued
 				msg.Nack(false, true)
 			} else {
@@ -130,7 +130,7 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 		}
 	}()
 
-	common.Logger.Info(fmt.Sprintf("Subscribed to %s with routing key %s", s.ExchangeName, routingKey))
+	logger.Logger.Info(fmt.Sprintf("Subscribed to %s with routing key %s", s.ExchangeName, routingKey))
 	return nil
 }
 
@@ -146,7 +146,7 @@ func (s *RabbitMQService) Close() error {
 func (s *RabbitMQService) PublishWithHeaders(routingKey string, message interface{}, headers amqp.Table) error {
 	body, err := json.Marshal(message)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error marshaling message: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error marshaling message: %s", err.Error()))
 		return err
 	}
 
@@ -163,11 +163,11 @@ func (s *RabbitMQService) PublishWithHeaders(routingKey string, message interfac
 		})
 
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error publishing message with headers: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error publishing message with headers: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Published message with headers to %s with routing key %s", s.ExchangeName, routingKey))
+	logger.Logger.Info(fmt.Sprintf("Published message with headers to %s with routing key %s", s.ExchangeName, routingKey))
 	return nil
 }
 
@@ -182,11 +182,11 @@ func (s *RabbitMQService) CreateQueue(queueName string, durable, autoDelete, exc
 		args,       // arguments
 	)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error creating queue %s: %s", queueName, err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error creating queue %s: %s", queueName, err.Error()))
 		return queue, err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Created queue: %s", queueName))
+	logger.Logger.Info(fmt.Sprintf("Created queue: %s", queueName))
 	return queue, nil
 }
 
@@ -201,12 +201,12 @@ func (s *RabbitMQService) BindQueueToExchange(queueName, routingKey, exchangeNam
 	)
 
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error binding queue %s to exchange %s: %s",
+		logger.Logger.Error(fmt.Sprintf("Error binding queue %s to exchange %s: %s",
 			queueName, exchangeName, err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Bound queue %s to exchange %s with routing key %s",
+	logger.Logger.Info(fmt.Sprintf("Bound queue %s to exchange %s with routing key %s",
 		queueName, exchangeName, routingKey))
 	return nil
 }

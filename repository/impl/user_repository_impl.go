@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"github.com/golang-jwt/jwt/v4"
@@ -233,10 +233,22 @@ func (u *userRepositoryImpl) ChangePassword(ctx context.Context, claims map[stri
 
 func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) {
 	var user entity.User
+
+	// First, check if user exists with the same phone number or username
 	err := u.DB.Where("username = ? or phone_number = ?", model.PhoneNumber, model.PhoneNumber).Find(&user).Error
 	if user.Username != "" {
-		return entity.User{}, errors.New("user already exist")
+		return entity.User{}, errors.New("User with phone number already exists")
 	}
+
+	// Check if user exists with the same email address
+	if model.EmailAddress != "" {
+		var userWithEmail entity.User
+		err := u.DB.Where("email = ?", model.EmailAddress).Find(&userWithEmail).Error
+		if err == nil && userWithEmail.ID != 0 {
+			return entity.User{}, errors.New("User with email address already exists")
+		}
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(model.Password), bcrypt.DefaultCost)
 	exception.PanicLogging(err)
 	user = entity.User{
@@ -319,7 +331,7 @@ func (u *userRepositoryImpl) SeedUser(ctx context.Context) {
 	if user.FirstName == "" {
 		_, err := u.Create(adminModel)
 		if err == nil {
-			common.Logger.Info("Admin user created successfully")
+			logger.Logger.Info("Admin user created successfully")
 		}
 	}
 
@@ -345,7 +357,7 @@ func (u *userRepositoryImpl) SeedUser(ctx context.Context) {
 		if refineryAdmin.FirstName == "" {
 			_, err := u.Create(refineryAdminModel)
 			if err == nil {
-				common.Logger.Info("Refinery admin user created successfully")
+				logger.Logger.Info("Refinery admin user created successfully")
 			}
 		}
 	}

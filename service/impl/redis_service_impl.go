@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/go-redis/redis/v9"
 )
 
@@ -28,17 +28,17 @@ func NewRedisService(client *redis.Client) *RedisService {
 func (s *RedisService) Set(key string, value interface{}, expiration time.Duration) error {
 	jsonData, err := json.Marshal(value)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error marshaling data for Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error marshaling data for Redis: %s", err.Error()))
 		return err
 	}
 
 	err = s.Client.Set(s.Ctx, key, jsonData, expiration).Err()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error setting data in Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error setting data in Redis: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Data stored in Redis with key: %s", key))
+	logger.Logger.Info(fmt.Sprintf("Data stored in Redis with key: %s", key))
 	return nil
 }
 
@@ -46,16 +46,16 @@ func (s *RedisService) Set(key string, value interface{}, expiration time.Durati
 func (s *RedisService) Get(key string, dest interface{}) error {
 	val, err := s.Client.Get(s.Ctx, key).Result()
 	if err == redis.Nil {
-		common.Logger.Info(fmt.Sprintf("Key %s does not exist in Redis", key))
+		logger.Logger.Info(fmt.Sprintf("Key %s does not exist in Redis", key))
 		return fmt.Errorf("key %s not found", key)
 	} else if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error getting data from Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error getting data from Redis: %s", err.Error()))
 		return err
 	}
 
 	err = json.Unmarshal([]byte(val), dest)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error unmarshaling data from Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error unmarshaling data from Redis: %s", err.Error()))
 		return err
 	}
 
@@ -66,11 +66,11 @@ func (s *RedisService) Get(key string, dest interface{}) error {
 func (s *RedisService) Delete(key string) error {
 	err := s.Client.Del(s.Ctx, key).Err()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error deleting key from Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error deleting key from Redis: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Key %s deleted from Redis", key))
+	logger.Logger.Info(fmt.Sprintf("Key %s deleted from Redis", key))
 	return nil
 }
 
@@ -78,17 +78,17 @@ func (s *RedisService) Delete(key string) error {
 func (s *RedisService) PublishMessage(channel string, message interface{}) error {
 	jsonData, err := json.Marshal(message)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error marshaling message for Redis pub/sub: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error marshaling message for Redis pub/sub: %s", err.Error()))
 		return err
 	}
 
 	err = s.Client.Publish(s.Ctx, channel, jsonData).Err()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error publishing message to Redis channel: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error publishing message to Redis channel: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Message published to Redis channel: %s", channel))
+	logger.Logger.Info(fmt.Sprintf("Message published to Redis channel: %s", channel))
 	return nil
 }
 
@@ -100,7 +100,7 @@ func (s *RedisService) SubscribeToChannel(channel string, handler func([]byte) e
 	// Confirm subscription
 	_, err := pubsub.Receive(s.Ctx)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error confirming subscription to Redis channel: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error confirming subscription to Redis channel: %s", err.Error()))
 		return err
 	}
 
@@ -110,12 +110,12 @@ func (s *RedisService) SubscribeToChannel(channel string, handler func([]byte) e
 		for msg := range ch {
 			err := handler([]byte(msg.Payload))
 			if err != nil {
-				common.Logger.Error(fmt.Sprintf("Error handling message from Redis channel: %s", err.Error()))
+				logger.Logger.Error(fmt.Sprintf("Error handling message from Redis channel: %s", err.Error()))
 			}
 		}
 	}()
 
-	common.Logger.Info(fmt.Sprintf("Subscribed to Redis channel: %s", channel))
+	logger.Logger.Info(fmt.Sprintf("Subscribed to Redis channel: %s", channel))
 	return nil
 }
 
@@ -123,7 +123,7 @@ func (s *RedisService) SubscribeToChannel(channel string, handler func([]byte) e
 func (s *RedisService) GetKeys(pattern string) ([]string, error) {
 	keys, err := s.Client.Keys(s.Ctx, pattern).Result()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error getting keys matching pattern %s: %s", pattern, err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error getting keys matching pattern %s: %s", pattern, err.Error()))
 		return nil, err
 	}
 	return keys, nil
@@ -133,7 +133,7 @@ func (s *RedisService) GetKeys(pattern string) ([]string, error) {
 func (s *RedisService) Exists(key string) (bool, error) {
 	result, err := s.Client.Exists(s.Ctx, key).Result()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error checking if key %s exists: %s", key, err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error checking if key %s exists: %s", key, err.Error()))
 		return false, err
 	}
 	return result > 0, nil
@@ -143,17 +143,17 @@ func (s *RedisService) Exists(key string) (bool, error) {
 func (s *RedisService) SetWithTTL(key string, value interface{}, ttl time.Duration) error {
 	jsonData, err := json.Marshal(value)
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error marshaling data for Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error marshaling data for Redis: %s", err.Error()))
 		return err
 	}
 
 	err = s.Client.Set(s.Ctx, key, jsonData, ttl).Err()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error setting data with TTL in Redis: %s", err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error setting data with TTL in Redis: %s", err.Error()))
 		return err
 	}
 
-	common.Logger.Info(fmt.Sprintf("Data stored in Redis with key: %s and TTL: %v", key, ttl))
+	logger.Logger.Info(fmt.Sprintf("Data stored in Redis with key: %s and TTL: %v", key, ttl))
 	return nil
 }
 
@@ -161,7 +161,7 @@ func (s *RedisService) SetWithTTL(key string, value interface{}, ttl time.Durati
 func (s *RedisService) GetTTL(key string) (time.Duration, error) {
 	ttl, err := s.Client.TTL(s.Ctx, key).Result()
 	if err != nil {
-		common.Logger.Error(fmt.Sprintf("Error getting TTL for key %s: %s", key, err.Error()))
+		logger.Logger.Error(fmt.Sprintf("Error getting TTL for key %s: %s", key, err.Error()))
 		return 0, err
 	}
 	return ttl, nil

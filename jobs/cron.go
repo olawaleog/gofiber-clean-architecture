@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/robfig/cron/v3"
 )
@@ -22,7 +22,7 @@ func SetupCronJobs(
 	// Add a cron job that runs every day at midnight
 	// Format: second minute hour day month weekday
 	_, err := c.AddFunc("0 */1 * * * *", func() {
-		common.Logger.Info("Running task every 5 minutes")
+		logger.Logger.Info("Running task every 5 minutes")
 		ctx := context.Background()
 
 		//get active truck
@@ -34,24 +34,24 @@ func SetupCronJobs(
 		// Example: Check for pending transactions older than 24 hours
 		err := (*transactionService).ProcessPendingTransactions(ctx, activeTruck)
 		if err != nil {
-			common.Logger.Error("Error in daily transaction processing: " + err.Error())
+			logger.Logger.Error("Error in daily transaction processing: " + err.Error())
 		}
 
 		// Additional scheduled tasks can be added here
 	})
 
 	if err != nil {
-		common.Logger.Error("Failed to setup cron job: " + err.Error())
+		logger.Logger.Error("Failed to setup cron job: " + err.Error())
 	}
 
 	// Add another example job that runs every hour
 	_, err = c.AddFunc("0 0 * * * *", func() {
-		common.Logger.Info("Running hourly scheduled task")
+		logger.Logger.Info("Running hourly scheduled task")
 		// Your hourly task logic here
 	})
 
 	if err != nil {
-		common.Logger.Error("Failed to setup hourly cron job: " + err.Error())
+		logger.Logger.Error("Failed to setup hourly cron job: " + err.Error())
 	}
 
 	return c
