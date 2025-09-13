@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
@@ -15,12 +16,13 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func NewMessageServiceImpl(config configuration.Config, messageTemplateRepository repository.MessageTemplateRepository, httpService *service.HttpService, rabbitMQService *RabbitMQService) service.MessageService {
+func NewMessageServiceImpl(config configuration.Config, messageTemplateRepository repository.MessageTemplateRepository, httpService *service.HttpService, rabbitMQService *RabbitMQService, notificationRepository repository.NotificationRepository) service.MessageService {
 	return &messageServiceImpl{
 		config:                    config,
 		MessageTemplateRepository: messageTemplateRepository,
 		HttpService:               *httpService,
 		rabbitMQService:           rabbitMQService,
+		notificationRepository:    notificationRepository,
 	}
 }
 
@@ -28,7 +30,8 @@ type messageServiceImpl struct {
 	service.HttpService
 	config configuration.Config
 	repository.MessageTemplateRepository
-	rabbitMQService *RabbitMQService
+	rabbitMQService        *RabbitMQService
+	notificationRepository repository.NotificationRepository
 }
 
 func (m *messageServiceImpl) GenerateOneTimePassword(context context.Context, uid uint) (entity.OneTimePassword, error) {
@@ -38,21 +41,66 @@ func (m *messageServiceImpl) GenerateOneTimePassword(context context.Context, ui
 }
 
 func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageModel) {
+	// Create a queued SMS message
+	queuedSMS := model.QueuedSMSMessage{
+		PhoneNumber: data.PhoneNumber,
+		CountryCode: data.CountryCode,
+		Message:     data.Message,
+	}
+
+	// Try to publish to RabbitMQ
+	err := m.rabbitMQService.PublishMessage("sms.send", queuedSMS)
+	if err != nil {
+		logger.Logger.Error(fmt.Sprintf("Failed to queue SMS to %s: %s", data.PhoneNumber, err.Error()))
+		// Fall back to synchronous sending if publishing fails
+		m.sendSMSDirect(data)
+	} else {
+		logger.Logger.Info(fmt.Sprintf("SMS to %s queued successfully", data.PhoneNumber))
+	}
+
+	// Save notification record
+	notification := entity.Notification{
+		Type:      entity.SMS,
+		Recipient: data.CountryCode + data.PhoneNumber,
+		Content:   data.Message,
+		Status:    "sent",
+		SentAt:    time.Now(),
+	}
+
+	_, err = m.notificationRepository.Create(ctx, notification)
+	if err != nil {
+		logger.Logger.Error(fmt.Sprintf("Failed to save SMS notification: %s", err.Error()))
+	}
+}
+
+// sendSMSDirect sends an SMS directly as a fallback mechanism
+func (m *messageServiceImpl) sendSMSDirect(data model.SMSMessageModel) {
 	headers := make(map[string]interface{})
 	headers["apiKey"] = m.config.Get("AFRICAS_TALKING_API_KEY")
+
 	body := make(map[string]interface{})
 	body["username"] = m.config.Get("AFRICAS_TALKING_USERNAME")
 	body["enqueue"] = 1
 	body["message"] = data.Message
-	if data.PhoneNumber[0] == '0' {
-		body["to"] = data.CountryCode + data.PhoneNumber[1:]
-	} else {
-		body["to"] = data.PhoneNumber
+
+	phoneNumber := data.PhoneNumber
+	if phoneNumber[0] == '0' {
+		phoneNumber = data.CountryCode + phoneNumber[1:]
+	} else if data.CountryCode != "" && phoneNumber[0] != '+' {
+		phoneNumber = data.CountryCode + phoneNumber
 	}
+
+	body["to"] = phoneNumber
 	body["from"] = "AquaWizz"
 
 	url := m.config.Get("AFRICAS_TALKING_BASE_URL") + "/version1/messaging"
-	m.HttpService.PostMethod(ctx, url, "POST", &body, &headers, true)
+	_, err := m.HttpService.PostMethod(context.Background(), url, "POST", &body, &headers, true)
+
+	if err != nil {
+		logger.Logger.Error(fmt.Sprintf("Error sending SMS directly: %s", err.Error()))
+	} else {
+		logger.Logger.Info(fmt.Sprintf("SMS sent directly to %s successfully!", phoneNumber))
+	}
 }
 
 func (m *messageServiceImpl) FindMessageTemplateById(ctx context.Context, id int) model.MessageTemplateModel {
@@ -109,7 +157,7 @@ func (m *messageServiceImpl) UpdateMessageTemplate(ctx context.Context, template
 	exception.PanicLogging(err)
 }
 
-func (m *messageServiceImpl) SendEmail(context context.Context, emailModel model.EmailMessageModel) {
+func (m *messageServiceImpl) SendEmail(ctx context.Context, emailModel model.EmailMessageModel) {
 	// Create a queued email message
 	queuedEmail := model.QueuedEmailMessage{
 		To:      emailModel.To,
@@ -126,6 +174,21 @@ func (m *messageServiceImpl) SendEmail(context context.Context, emailModel model
 		m.sendEmailDirect(queuedEmail)
 	} else {
 		logger.Logger.Info(fmt.Sprintf("Email to %s queued successfully", emailModel.To))
+	}
+
+	// Save notification record
+	notification := entity.Notification{
+		Type:      entity.EMAIL,
+		Recipient: emailModel.To,
+		Subject:   emailModel.Subject,
+		Content:   emailModel.Message,
+		Status:    "sent",
+		SentAt:    time.Now(),
+	}
+
+	_, err = m.notificationRepository.Create(ctx, notification)
+	if err != nil {
+		logger.Logger.Error(fmt.Sprintf("Failed to save email notification: %s", err.Error()))
 	}
 	return
 }
