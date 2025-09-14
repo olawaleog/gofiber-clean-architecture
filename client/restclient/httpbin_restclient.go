@@ -2,10 +2,10 @@ package restclient
 
 import (
 	"context"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 )
 
 func NewHttpRestClient(config configuration.Config) client.HttpClient {
@@ -16,7 +16,7 @@ type RestClient struct {
 	configuration.Config
 }
 
-func (h RestClient) Send(ctx context.Context, url string, method string, requestBody *map[string]interface{}, hd *map[string]interface{}, isForm bool) map[string]interface{} {
+func (h RestClient) Send(ctx context.Context, url string, method string, requestBody *map[string]interface{}, hd *map[string]interface{}, isForm bool) (map[string]interface{}, error) {
 	var headers []common.HttpHeader
 	for key, value := range *hd {
 		headers = append(headers, common.HttpHeader{Key: key, Value: value.(string)})
@@ -33,8 +33,7 @@ func (h RestClient) Send(ctx context.Context, url string, method string, request
 		ActiveTimeout:  60000,
 		IsFormData:     isForm,
 	}
-	res := httpClient.Execute(ctx)
-	logger.Logger.Error(res)
+	err := httpClient.Execute(ctx)
 	//exception.PanicLogging(err)
-	return *httpClient.ResponseBody
+	return *httpClient.ResponseBody, err
 }

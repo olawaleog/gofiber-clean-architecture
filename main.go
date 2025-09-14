@@ -9,7 +9,6 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/controller"
 	_ "github.com/RizkiMufrizal/gofiber-clean-architecture/docs"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/jobs"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/middleware"
 	repository "github.com/RizkiMufrizal/gofiber-clean-architecture/repository/impl"
@@ -65,6 +64,7 @@ func main() {
 	localGovernmentRepository := repository.NewLocalGovernmentRepository(database)
 	orderRepository := repository.NewOrderRepository(database)
 	paymentMethodRepository := repository.NewPaymentMethodRepository(database)
+	notificationRepository := repository.NewNotificationRepository(database)
 
 	//rest client
 	httpRestClient := restclient.NewHttpRestClient(config)
@@ -72,7 +72,7 @@ func main() {
 	//service
 	notificationService := service.NewNotificationService(config.Get("FCM_CREDENTIALS_PATH"))
 	httpService := service.NewHttpBinServiceImpl(&httpRestClient)
-	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService, rabbitMQService)
+	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService, rabbitMQService, notificationRepository)
 	// Initialize the email consumer service
 	emailConsumerService := service.NewEmailConsumerService(config, rabbitMQService)
 	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config, &notificationService)
@@ -123,10 +123,10 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Set up cron jobs
-	cronManager := jobs.SetupCronJobs(&transactionService, &truckService)
-	cronManager.Start()
-	defer cronManager.Stop()
-	logger.Logger.Info("Cron jobs scheduled and started")
+	//cronManager := jobs.SetupCronJobs(&transactionService, &truckService)
+	//cronManager.Start()
+	//defer cronManager.Stop()
+	//logger.Logger.Info("Cron jobs scheduled and started")
 
 	// Start the email consumer service
 	err := emailConsumerService.StartConsumer()

@@ -85,8 +85,17 @@ func (o OrderRepositoryImpl) GetRefineryOrders(ctx context.Context, u uint) ([]e
 
 	err := o.DB.WithContext(ctx).
 		Preload("Transaction").
+		Preload("Refinery").
+		Preload("Transaction.User").
+		Preload("Truck").
+		Preload("Truck.User").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
-		Where("refinery_id = ? ", u).Find(&order).Error
+		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
+		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
+		Joins("JOIN tb_trucks ON tb_trucks.id = tb_orders.truck_id").
+		Joins("JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id").
+		Order("tb_orders.id desc").
+		Find(&order).Error
 	//Where("refinery_id = ? AND DATE(created_at) = ?", u, today).First(&order).Error
 	if err != nil {
 		return order, err

@@ -3,6 +3,9 @@ package impl
 import (
 	"context"
 	"fmt"
+	"mime/multipart"
+	"strings"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
@@ -11,8 +14,6 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
-	"mime/multipart"
-	"strings"
 )
 
 func NewUserServiceImpl(userRepository *repository.UserRepository, messageService *service.MessageService, localGovernmentService *service.LocalGovernmentService) service.UserService {
@@ -216,6 +217,10 @@ func (userService *userServiceImpl) Authentication(ctx context.Context, model mo
 
 func (userService *userServiceImpl) Register(ctx context.Context, userModel model.UserModel) entity.User {
 	userModel.IsActive = true
+	if userModel.Password == "" {
+		// Generate a random password if not provided
+		userModel.Password, _ = common.GeneratePassword(8)
+	}
 	user, err := userService.UserRepository.Create(userModel)
 	exception.PanicLogging(err)
 	template := userService.MessageService.FindMessageTemplateByName(ctx, userModel.Role+"_template")

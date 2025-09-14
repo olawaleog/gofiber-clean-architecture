@@ -2,16 +2,17 @@ package configuration
 
 import (
 	"fmt"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
-	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func NewDatabase(config Config) *gorm.DB {
@@ -51,7 +52,7 @@ func NewDatabase(config Config) *gorm.DB {
 		&entity.User{}, &entity.UserRole{}, &entity.MessageTemplate{},
 		&entity.LocalGovernmentArea{}, &entity.Address{}, &entity.Truck{},
 		&entity.OneTimePassword{}, &entity.Refinery{}, &entity.PaymentMethod{},
-		&entity.Order{},
+		&entity.Order{}, &entity.Notification{},
 	)
 	//autoMigrate
 	//err = db.AutoMigrate(&entity.Product{})

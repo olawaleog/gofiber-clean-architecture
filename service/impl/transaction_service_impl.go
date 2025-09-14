@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
@@ -409,6 +410,36 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) 
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
 			},
+			Refinery: model.RefineryModel{
+				Id:      order.RefineryId,
+				Name:    order.Refinery.Name,
+				Email:   order.Refinery.Email,
+				Phone:   order.Refinery.Phone,
+				Address: order.Refinery.Address,
+				Region:  order.Refinery.Region,
+				PlaceId: order.Refinery.PlaceId,
+			},
+
+			User: model.UserModel{
+				Username:     order.Transaction.User.Username,
+				EmailAddress: order.Transaction.User.Email,
+				PhoneNumber:  order.Transaction.User.PhoneNumber,
+				FirstName:    order.Transaction.User.FirstName,
+				LastName:     order.Transaction.User.LastName,
+			},
+			Truck: model.TruckModel{
+				Id:          order.Truck.ID,
+				PlateNumber: order.Truck.PlateNumber,
+				Capacity:    strconv.Itoa(order.Truck.Capacity),
+				User: model.UserModel{
+					Id:           order.Truck.User.ID,
+					Username:     order.Truck.User.Username,
+					EmailAddress: order.Truck.User.Email,
+					FirstName:    order.Truck.User.FirstName,
+					LastName:     order.Truck.User.LastName,
+					PhoneNumber:  order.Truck.User.PhoneNumber,
+				},
+			},
 			DeliveryAddress: order.DeliveryAddress,
 			RefineryAddress: order.RefineryAddress,
 			Status:          order.Status,
@@ -432,7 +463,7 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 	header := make(map[string]interface{})
 	header["Authorization"] = "Bearer " + t.Config.Get("PAYSTACK_SECRET_KEY")
 	paystackUrl := t.Config.Get("PAYSTACK_BASE_URL")
-	response := t.HttpService.PostMethod(ctx, paystackUrl+"/transaction/verify/"+transaction.Reference, "GET", &map[string]interface{}{}, &header, false)
+	response, err := t.HttpService.PostMethod(ctx, paystackUrl+"/transaction/verify/"+transaction.Reference, "GET", &map[string]interface{}{}, &header, false)
 	jsn, err := json.Marshal(response)
 	exception.PanicLogging(err)
 
@@ -529,7 +560,7 @@ func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Cont
 	transaction := t.insertTransaction(ctx, request)
 
 	var email string
-	if request.EmailAddress == "" {
+	if request.EmailAddress == "" || !strings.Contains(request.EmailAddress, "@") {
 		email = "Intelblue28@gmail.com"
 	} else {
 		email = request.EmailAddress
@@ -688,7 +719,10 @@ func (t *transactionServiceImpl) SendToPayStack(ctx context.Context, url string,
 	header := make(map[string]interface{})
 	header["Authorization"] = "Bearer " + t.Config.Get("PAYSTACK_SECRET_KEY")
 
-	response := t.HttpService.PostMethod(ctx, url, "POST", &data, &header, false)
+	response, err := t.HttpService.PostMethod(ctx, url, "POST", &data, &header, false)
+	if err != nil {
+		return nil, err
+	}
 
 	return response, nil
 }

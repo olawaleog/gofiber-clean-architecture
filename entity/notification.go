@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // MessageType represents the type of message (email or SMS)
@@ -23,4 +24,8 @@ type Notification struct {
 	Content   string      `gorm:"column:content;type:text"`
 	Status    string      `gorm:"column:status;type:varchar(20);default:'sent'"` // sent, failed, delivered
 	SentAt    time.Time   `gorm:"column:sent_at"`
+}
+
+func (Notification) TableName() string {
+	return "tb_notifications"
 }

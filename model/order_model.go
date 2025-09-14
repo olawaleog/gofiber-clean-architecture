@@ -15,6 +15,7 @@ type OrderModel struct {
 	Status          uint             `json:"status"`
 	OrderStatus     uint             `json:"orderStatus"`
 	TruckId         uint             `json:"truckId"`
+	Truck           TruckModel       `json:"truck"`
 	Capacity        string           `json:"capacity"`
 	Id              uint             `json:"id"`
 	CreatedAt       time.Time        `json:"createdAt"`

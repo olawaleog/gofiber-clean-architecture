@@ -98,11 +98,13 @@ func (s *SMSConsumerServiceImpl) processSMSMessage(smsMessage model.QueuedSMSMes
 			SentAt:    time.Now(),
 		}
 
-		_, err = s.notificationRepository.Create(context.Background(), notification)
-		if err != nil {
-			logger.Logger.Error(fmt.Sprintf("Failed to update SMS notification status: %s", err.Error()))
+		_, saveErr := s.notificationRepository.Create(context.Background(), notification)
+		if saveErr != nil {
+			logger.Logger.Error(fmt.Sprintf("Failed to save SMS notification: %s", saveErr.Error()))
+			// We don't return this error as the SMS was already sent or attempted,
+			// this is just for record keeping
 		}
 	}
 
-	return err
+	return nil
 }
