@@ -103,6 +103,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		FortyThousandLitre:   FortyThousand,
 		CostPerThousandLitre: basicCost,
 		Distance:             shortestDistance,
+		Currency:             selectRefinery.Currency,
 	}
 
 	return response, nil

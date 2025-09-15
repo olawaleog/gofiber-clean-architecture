@@ -10,4 +10,5 @@ type RefineryCostModel struct {
 	Time                 int            `json:"time"`
 	RefineryId           uint           `json:"refineryId"`
 	Address              AddressModel   `json:"address"`
+	Currency             string         `json:"currency"`
 }
