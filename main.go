@@ -46,12 +46,13 @@ func main() {
 	config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
-	//redis := configuration.NewRedis(config)
+	redis := configuration.NewRedis(config)
 	rabbitMQ := configuration.NewRabbitMQ(config)
 
 	// Initialize Redis and RabbitMQ services
-	//redisService := service.NewRedisService(redis)
 	rabbitMQService := service.NewRabbitMQService(rabbitMQ, "aqua_wizz_exchange", "topic")
+	// Redis service initialization if needed in the future
+	// redisService := service.NewRedisService(redis)
 
 	//repository
 	messageTemplateRepository := repository.NewMessageTemplateRepositoryImpl(database)
@@ -64,6 +65,7 @@ func main() {
 	localGovernmentRepository := repository.NewLocalGovernmentRepository(database)
 	orderRepository := repository.NewOrderRepository(database)
 	paymentMethodRepository := repository.NewPaymentMethodRepository(database)
+	paymentConfigRepository := repository.NewPaymentConfigRepository(database, redis)
 	notificationRepository := repository.NewNotificationRepository(database)
 
 	//rest client
@@ -82,6 +84,7 @@ func main() {
 	truckService := service.NewTruckServiceImpl(&truckRepository, &userService, &messageService)
 	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService, config)
 	paymentService := service.NewPaymentService(&paymentRepository)
+	paymentConfigService := service.NewPaymentConfigService(paymentConfigRepository)
 
 	// Google Maps Service
 	mapsService := service.NewGoogleMapsService(config)
@@ -94,6 +97,7 @@ func main() {
 	truckController := controller.NewTruckController(&truckService, config)
 	refineryController := controller.NewRefineryController(&refineryService, config)
 	paymentController := controller.NewPaymentController(&paymentService, &userService, config)
+	paymentConfigController := controller.NewPaymentConfigController(paymentConfigService)
 	localGovernmentController := controller.NewLocalGovernmentAreaController(&localGovernmentService)
 
 	// Google Maps Controller
@@ -115,9 +119,12 @@ func main() {
 	truckController.Route(app)
 	refineryController.Route(app)
 	paymentController.Route(app)
+	paymentConfigController.Route(app)
 	localGovernmentController.Route(app)
 	// Register Google Maps endpoints
 	mapsController.RegisterRoutes(app)
+
+	// Payment configuration routes are registered through the controller's Route method
 
 	//swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)

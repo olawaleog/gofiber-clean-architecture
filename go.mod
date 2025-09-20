@@ -7,6 +7,7 @@ toolchain go1.23.6
 require (
 	firebase.google.com/go/v4 v4.15.2
 	github.com/go-playground/validator/v10 v10.11.1
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/gofiber/jwt/v3 v3.3.4
@@ -14,7 +15,10 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.4.0
+	github.com/pkg/errors v0.9.1
+	github.com/robfig/cron/v3 v3.0.0
 	github.com/sirupsen/logrus v1.9.0
+	github.com/streadway/amqp v1.1.0
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.36.0
 	google.golang.org/api v0.215.0
@@ -72,11 +76,8 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
-	github.com/robfig/cron/v3 v3.0.0 // indirect
-	github.com/streadway/amqp v1.1.0 // indirect
 	github.com/swaggo/files v1.0.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.58.0 // indirect
