@@ -11,6 +11,11 @@ type PaymentMethodRepositoryImpl struct {
 	db *gorm.DB
 }
 
+func (p PaymentMethodRepositoryImpl) GetPaymentConfigByCountryCode(ctx context.Context, code any) (interface{}, interface{}) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (p PaymentMethodRepositoryImpl) GetAll(ctx context.Context) ([]entity.PaymentMethod, error) {
 	//TODO implement me
 	panic("implement me")

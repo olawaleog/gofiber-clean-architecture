@@ -97,7 +97,7 @@ func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request model.Addr
 
 func (u *userRepositoryImpl) UpdateProfile(ctx context.Context, request model.UserModel) (model.UserModel, error) {
 	var user entity.User
-	err := u.DB.WithContext(ctx).Where("username = ?", request.Username).First(&user).Error
+	err := u.DB.WithContext(ctx).Where("id = ?", request.Id).First(&user).Error
 	if err != nil {
 		return model.UserModel{}, errors.New("user not found")
 	}
@@ -106,14 +106,26 @@ func (u *userRepositoryImpl) UpdateProfile(ctx context.Context, request model.Us
 		return model.UserModel{}, errors.New("user is not active")
 	}
 
+	// Check if email is being updated and already exists for another user
+	//if user.Email != request.EmailAddress {
+	//	var existingUser entity.User
+	//	err := u.DB.WithContext(ctx).Where("email = ? AND id != ?", request.EmailAddress, user.ID).First(&existingUser).Error
+	//	if err == nil {
+	//		return model.UserModel{}, errors.New("email address already exists for another user")
+	//	} else if err != gorm.ErrRecordNotFound {
+	//		return model.UserModel{}, fmt.Errorf("error checking email uniqueness: %w", err)
+	//	}
+	user.Email = request.EmailAddress
+	//}
+
 	user.FirstName = request.FirstName
 	user.LastName = request.LastName
-	user.Email = request.EmailAddress
-	//user.PhoneNumber = request.PhoneNumber
-	//user.FileName = request.FileName
-
-	err = u.DB.Save(&user).Error
-	exception.PanicLogging(err)
+	user.Region = request.Region
+	user.CountryCode = request.CountryCode
+	err = u.DB.WithContext(ctx).Updates(user).Error
+	if err != nil {
+		return model.UserModel{}, fmt.Errorf("failed to update user profile: %w", err)
+	}
 
 	return model.UserModel{
 		Id:        user.ID,
@@ -262,6 +274,7 @@ func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) 
 		PhoneNumber: model.PhoneNumber,
 		FileName:    model.FileName,
 		RefineryId:  model.RefineryId,
+		AreaCode:    model.AreaCode,
 		CountryCode: model.CountryCode,
 	}
 	var addresses []entity.Address

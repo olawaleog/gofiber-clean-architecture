@@ -77,7 +77,7 @@ func main() {
 	messageService := service.NewMessageServiceImpl(config, messageTemplateRepository, &httpService, rabbitMQService, notificationRepository)
 	// Initialize the email consumer service
 	emailConsumerService := service.NewEmailConsumerService(config, rabbitMQService)
-	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config, &notificationService)
+	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config, &notificationService, &paymentConfigRepository)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
 	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService)

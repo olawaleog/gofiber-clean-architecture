@@ -35,6 +35,7 @@ type Transaction struct {
 	Address     Address   `gorm:"foreignkey:AddressId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	RefineryId  uint      `gorm:"column:refinery_id;type:int"`
 	Refinery    Refinery  `gorm:"foreignkey:RefineryId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CountryCode string    `gorm:"column:country_code;type:varchar(10)"`
 
 	//Order       Order     `gorm:"foreignkey:TransactionId"`
 }

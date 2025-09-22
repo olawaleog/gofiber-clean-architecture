@@ -18,4 +18,5 @@ type MobileMoneyRequestModel struct {
 	Capacity        string  `json:"capacity"`
 	Type            string  `json:"type"`
 	AddressId       uint    `json:"addressId"`
+	CountryCode     string  `json:"countryCode"`
 }

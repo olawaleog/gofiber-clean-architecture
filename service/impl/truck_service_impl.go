@@ -67,7 +67,7 @@ func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckM
 	smsModel := model.SMSMessageModel{
 		Message:     "Hello " + truckModel.FirstName + "," + "Your Truck has been registered successfully.Your password is " + user.Password + ":\n Download  the app to complete your registration\n",
 		PhoneNumber: user.PhoneNumber,
-		CountryCode: userResult.CountryCode,
+		CountryCode: userResult.AreaCode,
 	}
 	t.MessageService.SendSMS(context.TODO(), smsModel)
 

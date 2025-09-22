@@ -63,10 +63,14 @@ func (u *userServiceImpl) SaveAddress(ctx context.Context, request model.Address
 
 func (u *userServiceImpl) UpdateProfile(ctx context.Context, request model.UserModel, token string) (model.UserModel, error) {
 	claims, err := u.GetClaimsFromToken(ctx, token)
-	exception.PanicLogging(err)
+	if err != nil {
+		return model.UserModel{}, fmt.Errorf("invalid token: %w", err)
+	}
 	request.Username = claims["username"].(string)
 	userResult, err := u.UserRepository.UpdateProfile(ctx, request)
-	exception.PanicLogging(err)
+	if err != nil {
+		return model.UserModel{}, err
+	}
 
 	return userResult, nil
 }
@@ -123,7 +127,7 @@ func (u *userServiceImpl) ResetPassword(ctx context.Context, request model.UserM
 	// Send SMS
 	emailMessageModel := model.SMSMessageModel{
 		PhoneNumber: request.PhoneNumber,
-		CountryCode: userResult.CountryCode,
+		CountryCode: userResult.AreaCode,
 		Message:     message,
 	}
 	u.MessageService.SendSMS(ctx, emailMessageModel)
@@ -258,6 +262,7 @@ func (u *userServiceImpl) RegisterCustomer(ctx context.Context, userModel model.
 	emailMessageModel := model.SMSMessageModel{
 		PhoneNumber: user.PhoneNumber,
 		Message:     message,
+		CountryCode: user.AreaCode,
 	}
 	user.Password = ""
 	u.MessageService.SendSMS(ctx, emailMessageModel)

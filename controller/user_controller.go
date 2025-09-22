@@ -2,16 +2,14 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"os"
-	"strconv"
-	"strings"
 )
 
 func NewUserController(userService *service.UserService, config configuration.Config) *UserController {
@@ -26,6 +24,7 @@ type UserController struct {
 func (controller UserController) Route(app *fiber.App) {
 	app.Post("/v1/api/authentication", controller.Authentication)
 	app.Post("/v1/api/register", controller.Register)
+	app.Put("/v1/api/users/:id", controller.UpdateUser)
 	app.Post("/v1/api/register-customer", controller.RegisterCustomer)
 	app.Post("/v1/api/change-password", controller.ChangePassword)
 	app.Post("/v1/api/reset-password", controller.ResetPassword)
@@ -53,28 +52,17 @@ func (controller UserController) Register(c *fiber.Ctx) error {
 	var request model.UserModel
 	err := c.BodyParser(&request)
 	exception.PanicLogging(err)
-	value := controller.Config.Get("COUNTRY_CODE")
-	if value == "" {
-		value = "+233"
+
+	if request.CountryCode == "NG" {
+		request.AreaCode = "+234"
+	} else {
+		request.CountryCode = "+233"
 	}
 
-	request.CountryCode = value
-	file, err := c.FormFile("image")
 	exception.PanicLogging(err)
-	g := uuid.New().String()
-	extension := strings.Split(file.Filename, ".")
 
-	request.FileName = fmt.Sprintf("%v.%s", g, extension[1])
 	request.IsActive = false
 	_ = controller.UserService.Register(c.Context(), request)
-	destination := fmt.Sprintf("./uploads/%s", request.FileName)
-
-	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		err = os.Mkdir("./uploads", os.ModePerm)
-		exception.PanicLogging(err)
-	}
-
-	err = c.SaveFile(file, destination)
 	exception.PanicLogging(err)
 
 	return c.Status(fiber.StatusOK).JSON(model.GeneralResponse{
@@ -256,7 +244,9 @@ func (controller UserController) UpdateProfile(ctx *fiber.Ctx) error {
 	err := ctx.BodyParser(&request)
 	exception.PanicLogging(err)
 	token := ctx.Get("Authorization")
-
+	param := ctx.Params("id")
+	id, err := strconv.Atoi(param)
+	request.Id = uint(id)
 	user, err := controller.UserService.UpdateProfile(ctx.Context(), request, token)
 	exception.PanicLogging(err)
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
@@ -312,5 +302,30 @@ func (controller UserController) UpdateFcmToken(ctx *fiber.Ctx) error {
 		Message: "Successful",
 		Data:    nil,
 		Success: true,
+	})
+}
+
+func (controller *UserController) UpdateUser(ctx *fiber.Ctx) error {
+	var request model.UserModel
+	err := ctx.BodyParser(&request)
+	exception.PanicLogging(err)
+	userId, err := strconv.Atoi(ctx.Params("id"))
+	exception.PanicLogging(err)
+	request.Id = uint(userId)
+	token := ctx.Get("Authorization")
+	user, err := controller.UserService.UpdateProfile(ctx.Context(), request, token)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    400,
+			Message: err.Error(),
+			Success: false,
+			Data:    nil,
+		})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    200,
+		Message: "User updated successfully",
+		Success: true,
+		Data:    user,
 	})
 }

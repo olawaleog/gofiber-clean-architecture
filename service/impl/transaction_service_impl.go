@@ -21,6 +21,7 @@ type transactionServiceImpl struct {
 	repository.TransactionRepository
 	repository.OrderRepository
 	repository.PaymentMethodRepository
+	repository.PaymentConfigRepository
 	service.HttpService
 	configuration.Config
 	service.NotificationService // Add this line
@@ -34,6 +35,7 @@ func NewTransactionServiceImpl(
 	client *service.HttpService,
 	config configuration.Config,
 	notificationService *service.NotificationService, // Add this param
+	paymentConfigRepository *repository.PaymentConfigRepository,
 ) service.TransactionService {
 	return &transactionServiceImpl{
 		TransactionRepository:   *transactionRepository,
@@ -41,7 +43,8 @@ func NewTransactionServiceImpl(
 		Config:                  config,
 		OrderRepository:         *orderRepo,
 		PaymentMethodRepository: *paymentRepo,
-		NotificationService:     *notificationService, // Set here
+		NotificationService:     *notificationService,
+		PaymentConfigRepository: *paymentConfigRepository,
 	}
 }
 
@@ -50,6 +53,12 @@ func (t *transactionServiceImpl) ProcessRecurringPayment(ctx context.Context, re
 
 	paymentMethod, err := t.PaymentMethodRepository.GetByID(ctx, strconv.FormatUint(uint64(request.PaymentMethodId), 10))
 	exception.PanicLogging(err)
+
+	paymentConfig, err := t.PaymentConfigRepository.GetPaymentConfig(ctx, request.CountryCode)
+	exception.PanicLogging(err)
+	if paymentConfig == nil {
+		exception.PanicLogging(errors.New("payment configuration not found for the given country code"))
+	}
 
 	var email string
 	if request.EmailAddress == "" {
@@ -64,7 +73,7 @@ func (t *transactionServiceImpl) ProcessRecurringPayment(ctx context.Context, re
 	data["email"] = email
 	data["currency"] = request.Currency
 	paystackUrl := t.Config.Get("PAYSTACK_BASE_URL") + "/transaction/charge_authorization"
-	response, err := t.SendToPayStack(ctx, paystackUrl, data)
+	response, err := t.SendToPayStack(ctx, paystackUrl, data, paymentConfig.SecretKey)
 	exception.PanicLogging(err)
 	transaction.Reference = response["data"].(map[string]interface{})["reference"].(string)
 	err = t.TransactionRepository.Update(ctx, transaction)
@@ -460,8 +469,14 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 
 		exception.PanicLogging(errors.New("transaction does not exist"))
 	}
+
+	paymentConfig, err := t.PaymentConfigRepository.GetPaymentConfig(ctx, transaction.CountryCode)
+	exception.PanicLogging(err)
+	if paymentConfig == nil {
+		exception.PanicLogging(errors.New("payment configuration not found for the given country code"))
+	}
 	header := make(map[string]interface{})
-	header["Authorization"] = "Bearer " + t.Config.Get("PAYSTACK_SECRET_KEY")
+	header["Authorization"] = "Bearer " + paymentConfig.SecretKey
 	paystackUrl := t.Config.Get("PAYSTACK_BASE_URL")
 	response, err := t.HttpService.PostMethod(ctx, paystackUrl+"/transaction/verify/"+transaction.Reference, "GET", &map[string]interface{}{}, &header, false)
 	jsn, err := json.Marshal(response)
@@ -555,8 +570,13 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 }
 
 func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Context, request model.MobileMoneyRequestModel) interface{} {
-	//amount, err := strconv.ParseFloat(request.Amount, 64)
-	//exception.PanicLogging(err)
+	// Load payment configuration based on country code
+	paymentConfig, err := t.PaymentConfigRepository.GetPaymentConfig(ctx, request.CountryCode)
+	exception.PanicLogging(err)
+	if paymentConfig == nil {
+		exception.PanicLogging(errors.New("payment configuration not found for the given country code"))
+	}
+
 	transaction := t.insertTransaction(ctx, request)
 
 	var email string
@@ -581,11 +601,10 @@ func (t *transactionServiceImpl) InitiateMobileMoneyTransaction(ctx context.Cont
 		paystackUrl = t.Config.Get("PAYSTACK_BASE_URL") + "/transaction/initialize"
 		var chn []string
 		chn = append(chn, "card")
-		//data["channel"] = chn
 		data["callback_url"] = "https://www.aquawizz.com/redirect-url"
 	}
 
-	response, err := t.SendToPayStack(ctx, paystackUrl, data)
+	response, err := t.SendToPayStack(ctx, paystackUrl, data, paymentConfig.SecretKey)
 	if request.Provider == "card" {
 		transaction.Reference = response["data"].(map[string]interface{})["reference"].(string)
 		err = t.TransactionRepository.Update(ctx, transaction)
@@ -628,6 +647,7 @@ func (t *transactionServiceImpl) insertTransaction(ctx context.Context, request 
 		Type:        request.Type,
 		AddressId:   request.AddressId,
 		RefineryId:  request.RefineryId,
+		CountryCode: request.CountryCode,
 	}
 	transaction = t.TransactionRepository.Insert(ctx, transaction)
 	return transaction
@@ -714,10 +734,10 @@ func (t *transactionServiceImpl) FindById(ctx context.Context, id uint) (model.O
 	}
 	return orderModel, nil
 }
-func (t *transactionServiceImpl) SendToPayStack(ctx context.Context, url string, data map[string]interface{}) (map[string]interface{}, error) {
+func (t *transactionServiceImpl) SendToPayStack(ctx context.Context, url string, data map[string]interface{}, secretKey string) (map[string]interface{}, error) {
 
 	header := make(map[string]interface{})
-	header["Authorization"] = "Bearer " + t.Config.Get("PAYSTACK_SECRET_KEY")
+	header["Authorization"] = "Bearer " + secretKey
 
 	response, err := t.HttpService.PostMethod(ctx, url, "POST", &data, &header, false)
 	if err != nil {
