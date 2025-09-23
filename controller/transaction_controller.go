@@ -34,6 +34,7 @@ func (c TransactionController) Route(app *fiber.App) {
 	app.Get("/v1/api/get-driver-completed-orders", c.GetDriverCompletedOrder)
 	app.Get("/v1/api/get-customer-orders", c.GetCustomerOrders)
 	app.Get("/v1/api/transaction-list", c.GetTransactions)
+	app.Get("/v1/api/transactions-by-country", c.GetTransactionsByCountryCode)
 	app.Get("/v1/api/mark-order-ready-for-delivery/:id", c.MarkOrderReadyForDelivery)
 	app.Get("/v1/api/close-order/:id", c.CloseOrder)
 	app.Get("/v1/api/order/:id", c.FindById)
@@ -305,4 +306,86 @@ func (c TransactionController) SubmitRating(ctx *fiber.Ctx) error {
 		Data:    nil,
 		Success: true,
 	})
+}
+
+// GetTransactionsByCountryCode returns transactions filtered by country code or all transactions
+func (c TransactionController) GetTransactionsByCountryCode(ctx *fiber.Ctx) error {
+	// Get pagination parameters from the query string
+	pageStr := ctx.Query("page", "1")    // default to page 1 if not provided
+	limitStr := ctx.Query("limit", "10") // default to 10 items per page if not provided
+
+	// Convert string parameters to integers
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
+	// Get country code from token
+	countryCode := ""
+	token := ctx.Get("Authorization")
+	if token != "" {
+		claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+		if err == nil && claims["countryCode"] != nil {
+			// Use the country code from JWT claims
+			countryCode, _ = claims["countryCode"].(string)
+		}
+	}
+
+	// Allow override via query parameter for admin users (optional)
+	queryCountryCode := ctx.Query("country_code", "")
+	if queryCountryCode != "" && c.isAdminUser(ctx) {
+		countryCode = queryCountryCode
+	}
+
+	// Get transactions with country code filter and pagination
+	transactions, totalCount := c.TransactionService.GetTransactionsByCountryCode(ctx.Context(), countryCode, page, limit)
+
+	// Create pagination response
+	paginatedResponse := model.NewPaginationResponse(transactions, page, limit, totalCount)
+
+	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Successful",
+		Data:    paginatedResponse,
+		Success: true,
+	})
+}
+
+// isAdminUser checks if the current user has admin privileges
+func (c TransactionController) isAdminUser(ctx *fiber.Ctx) bool {
+	token := ctx.Get("Authorization")
+	if token == "" {
+		return false
+	}
+
+	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
+	if err != nil {
+		return false
+	}
+
+	// Check the role in claims
+	if claims["roles"] != nil {
+		roles, ok := claims["roles"].([]interface{})
+		if ok && len(roles) > 0 {
+			for _, role := range roles {
+				if roleMap, ok := role.(map[string]interface{}); ok {
+					if roleVal, exists := roleMap["role"].(string); exists && roleVal == "admin" {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	// Check user role field directly
+	if userRole, exists := claims["role"].(string); exists && userRole == "admin" {
+		return true
+	}
+
+	return false
 }

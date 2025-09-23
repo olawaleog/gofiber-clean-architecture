@@ -22,6 +22,7 @@ func GenerateToken(username string, roles []map[string]interface{}, user entity.
 		"emailAddress": user.Email,
 		"phoneNumber":  user.PhoneNumber,
 		"refineryId":   user.RefineryId,
+		"countryCode":  user.CountryCode,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenSigned, err := token.SignedString([]byte(jwtSecret))

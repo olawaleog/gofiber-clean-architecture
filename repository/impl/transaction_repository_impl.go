@@ -190,3 +190,30 @@ func (transactionRepository *transactionRepositoryImpl) FindAllPaginated(ctx con
 
 	return transactions, totalCount
 }
+
+// FindByCountryCode returns transactions filtered by country code or all if code is empty
+func (transactionRepository *transactionRepositoryImpl) FindByCountryCode(ctx context.Context, countryCode string, page, limit int) ([]entity.Transaction, int64) {
+	var transactions []entity.Transaction
+	var totalCount int64
+
+	// Calculate offset based on page and limit
+	offset := (page - 1) * limit
+
+	query := transactionRepository.DB.WithContext(ctx).Model(&entity.Transaction{})
+
+	// Apply country code filter if provided
+	if countryCode != "" {
+		query = query.Where("country_code = ?", countryCode)
+	}
+
+	// Get total count with the filter applied
+	query.Count(&totalCount)
+
+	// Execute the query with pagination
+	query.Order("created_at desc").
+		Limit(limit).
+		Offset(offset).
+		Find(&transactions)
+
+	return transactions, totalCount
+}

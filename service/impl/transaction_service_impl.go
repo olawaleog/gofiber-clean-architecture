@@ -890,3 +890,31 @@ func (t *transactionServiceImpl) SubmitRating(ctx context.Context, ratingModel m
 
 	return nil
 }
+
+// GetTransactionsByCountryCode returns transactions filtered by country code or all if code is empty
+func (t *transactionServiceImpl) GetTransactionsByCountryCode(ctx context.Context, countryCode string, page, limit int) ([]model.TransactionModel, int64) {
+	transactions, totalCount := t.TransactionRepository.FindByCountryCode(ctx, countryCode, page, limit)
+
+	var transactionModels []model.TransactionModel
+	for _, transaction := range transactions {
+		transactionModels = append(transactionModels, model.TransactionModel{
+			ID:          transaction.ID,
+			UserId:      transaction.UserId,
+			Amount:      transaction.Amount,
+			PhoneNumber: transaction.PhoneNumber,
+			Email:       transaction.Email,
+			Provider:    transaction.Provider,
+			Status:      transaction.Status,
+			PaymentID:   transaction.PaymentID,
+			PaymentType: transaction.PaymentType,
+			CompletedAt: transaction.CompletedAt,
+			Currency:    transaction.Currency,
+			Reference:   transaction.Reference,
+			Scheme:      transaction.Scheme,
+			CountryCode: transaction.CountryCode,
+			CreatedAt:   transaction.CreatedAt,
+		})
+	}
+
+	return transactionModels, totalCount
+}

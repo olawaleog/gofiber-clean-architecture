@@ -18,4 +18,5 @@ type TransactionRepository interface {
 	GetRefineryDashboardData(ctx context.Context, u uint) (map[string]interface{}, error)
 	GetAdminDashboardData(ctx context.Context) map[string]interface{}
 	FindPendingTransactionsOlderThan(ctx context.Context, duration time.Duration) ([]entity.Transaction, error)
+	FindByCountryCode(ctx context.Context, countryCode string, page, limit int) ([]entity.Transaction, int64)
 }
