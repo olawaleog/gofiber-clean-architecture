@@ -8,8 +8,8 @@ import (
 
 type Transaction struct {
 	gorm.Model
-	UserId float64 `gorm:"column:user_id;type:int"`
-	User   User    `gorm:"foreignkey:UserId"`
+	UserId uint `gorm:"column:user_id;type:int"`
+	User   User `gorm:"foreignkey:UserId"`
 
 	Amount float64 `gorm:"column:amount;type:numeric(10,2)"`
 

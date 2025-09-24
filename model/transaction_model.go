@@ -1,8 +1,9 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 //generate TransactionModel form entity.Transaction
@@ -26,6 +27,9 @@ type TransactionModel struct {
 	CreatedAt       time.Time    `json:"created_at"`
 	UpdatedAt       string       `json:"updated_at"`
 	DeliveryAddress AddressModel `json:"delivery_address_detail"`
+	CountryCode     string       `json:"country_code"`
+	Scheme          string       `json:"scheme"`
+	CompletedAt     time.Time    `json:"completed_at"`
 }
 type TransactionCreateUpdateModel struct {
 	Id                 string                               `json:"id"`

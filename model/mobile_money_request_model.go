@@ -8,7 +8,7 @@ type MobileMoneyRequestModel struct {
 	Provider        string  `json:"provider"`
 	EmailAddress    string  `json:"emailAddress"`
 	PhoneNumber     string  `json:"phoneNumber"`
-	UserId          float64 `json:"userId"`
+	UserId          uint    `json:"userId"`
 	Currency        string  `json:"currency"`
 	CustomerPlaceId string  `json:"customerPlaceId"`
 	RefineryPlaceId string  `json:"refineryPlaceId"`

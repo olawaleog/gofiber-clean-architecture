@@ -52,7 +52,7 @@ func (c TransactionController) InitiateMobileMoneyPayment(ctx *fiber.Ctx) error 
 	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
 	exception.PanicLogging(err)
 	//mobileMoneyRequestModel.PhoneNumber = claims["phoneNumber"].(string)
-	mobileMoneyRequestModel.UserId = claims["userId"].(float64)
+	mobileMoneyRequestModel.UserId = claims["userId"].(uint)
 	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
 	response := c.TransactionService.InitiateMobileMoneyTransaction(ctx.Context(), mobileMoneyRequestModel)
 	//var transactionStatus = response.(model.TransactionStatusModel)
@@ -251,7 +251,7 @@ func (c TransactionController) ProcessRecurringPayment(ctx *fiber.Ctx) error {
 	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
 	exception.PanicLogging(err)
 	//mobileMoneyRequestModel.PhoneNumber = claims["phoneNumber"].(string)
-	mobileMoneyRequestModel.UserId = claims["userId"].(float64)
+	mobileMoneyRequestModel.UserId = claims["userId"].(uint)
 	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
 	response := c.TransactionService.ProcessRecurringPayment(ctx.Context(), mobileMoneyRequestModel)
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
