@@ -61,12 +61,8 @@ func (u *userServiceImpl) SaveAddress(ctx context.Context, request model.Address
 	return addressModel, nil
 }
 
-func (u *userServiceImpl) UpdateProfile(ctx context.Context, request model.UserModel, token string) (model.UserModel, error) {
-	claims, err := u.GetClaimsFromToken(ctx, token)
-	if err != nil {
-		return model.UserModel{}, fmt.Errorf("invalid token: %w", err)
-	}
-	request.Username = claims["username"].(string)
+func (u *userServiceImpl) UpdateProfile(ctx context.Context, request model.UserModel, username string) (model.UserModel, error) {
+	request.Username = username
 	userResult, err := u.UserRepository.UpdateProfile(ctx, request)
 	if err != nil {
 		return model.UserModel{}, err
