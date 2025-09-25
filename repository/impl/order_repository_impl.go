@@ -79,11 +79,11 @@ func (o OrderRepositoryImpl) Update(ctx context.Context, order entity.Order) err
 	return nil
 }
 
-func (o OrderRepositoryImpl) GetRefineryOrders(ctx context.Context, u uint) ([]entity.Order, error) {
+func (o OrderRepositoryImpl) GetRefineryOrders(ctx context.Context, u uint, countryCode string) ([]entity.Order, error) {
 	var order []entity.Order
 	//today := time.Now().Format("2006-01-02") // Format the current date as YYYY-MM-DD
 
-	err := o.DB.WithContext(ctx).
+	query := o.DB.WithContext(ctx).
 		Preload("Transaction").
 		Preload("Refinery").
 		Preload("Transaction.User").
@@ -93,10 +93,15 @@ func (o OrderRepositoryImpl) GetRefineryOrders(ctx context.Context, u uint) ([]e
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
 		Joins("JOIN tb_trucks ON tb_trucks.id = tb_orders.truck_id").
-		Joins("JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id").
-		Order("tb_orders.id desc").
-		Find(&order).Error
-	//Where("refinery_id = ? AND DATE(created_at) = ?", u, today).First(&order).Error
+		Joins("JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id")
+
+	// Filter by country code if provided
+	if countryCode != "" {
+		query = query.Where("tb_transactions.country_code = ?", countryCode)
+	}
+
+	err := query.Order("tb_orders.id desc").Find(&order).Error
+
 	if err != nil {
 		return order, err
 	}

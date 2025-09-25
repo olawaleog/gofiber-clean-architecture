@@ -385,8 +385,8 @@ func (t *transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, order
 	return order, nil
 }
 
-func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint) ([]model.OrderModel, error) {
-	orders, err := t.OrderRepository.GetRefineryOrders(ctx, u)
+func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint, countryCode string) ([]model.OrderModel, error) {
+	orders, err := t.OrderRepository.GetRefineryOrders(ctx, u, countryCode)
 	exception.PanicLogging(err)
 	if orders == nil {
 		return nil, exception.BadRequestError{

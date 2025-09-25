@@ -103,8 +103,17 @@ func (c TransactionController) GetRefineryOrders(ctx *fiber.Ctx) error {
 	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
 	exception.PanicLogging(err)
 	refineryId := claims["refineryId"].(float64)
-	orders, err := c.TransactionService.GetRefineryOrders(ctx.Context(), uint(refineryId))
+
+	// Extract country code from claims
+	countryCode := ""
+	if claims["countryCode"] != nil {
+		countryCode, _ = claims["countryCode"].(string)
+	}
+
+	// Get refinery orders with country code filter
+	orders, err := c.TransactionService.GetRefineryOrders(ctx.Context(), uint(refineryId), countryCode)
 	exception.PanicLogging(err)
+
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,
 		Message: "Successful",
