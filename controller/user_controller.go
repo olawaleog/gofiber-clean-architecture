@@ -153,6 +153,17 @@ func (controller UserController) HandleChangePassword(c *fiber.Ctx) error {
 		})
 	}
 
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(model.GeneralResponse{
+			Code:    fiber.StatusUnauthorized,
+			Message: "Authentication required",
+			Success: false,
+		})
+	}
+
+	// Extract the token from header
 	token := c.Get("Authorization")
 	if token == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(model.GeneralResponse{
@@ -167,7 +178,23 @@ func (controller UserController) HandleChangePassword(c *fiber.Ctx) error {
 		token = token[7:]
 	}
 
+	// Verify user is changing their own password
+	if _, ok := claims["userId"].(float64); !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    fiber.StatusBadRequest,
+			Message: "Invalid user ID in token",
+			Success: false,
+		})
+	}
+
 	user := controller.ChangePassword(c.Context(), token, request)
+	if user.Username == "" {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
+			Code:    fiber.StatusInternalServerError,
+			Message: "Failed to change password",
+			Success: false,
+		})
+	}
 
 	return c.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    fiber.StatusOK,
@@ -188,7 +215,15 @@ func (controller UserController) HandleChangePassword(c *fiber.Ctx) error {
 func (controller UserController) ListUsers(c *fiber.Ctx) error {
 	var users []model.UserModel
 	result, err := controller.UserService.List(c.Context())
-	exception.PanicLogging(err)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
+			Code:    fiber.StatusInternalServerError,
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
+	// Transform the users
 	for _, user := range result {
 		users = append(users, model.UserModel{
 			Id:           user.ID,
@@ -201,8 +236,13 @@ func (controller UserController) ListUsers(c *fiber.Ctx) error {
 			FileName:     user.FileName,
 		})
 	}
-	return c.Status(fiber.StatusOK).
-		JSON(users)
+
+	return c.Status(fiber.StatusOK).JSON(model.GeneralResponse{
+		Code:    fiber.StatusOK,
+		Message: "Users retrieved successfully",
+		Success: true,
+		Data:    users,
+	})
 }
 
 func (controller UserController) FindUserById(c *fiber.Ctx) error {
