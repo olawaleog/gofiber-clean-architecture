@@ -89,8 +89,11 @@ func main() {
 	// Google Maps Service
 	mapsService := service.NewGoogleMapsService(config)
 
+	// Authorization Service
+	authorizationService := service.NewAuthorizationService()
+
 	//controller
-	transactionController := controller.NewTransactionController(&transactionService, &userService, config)
+	transactionController := controller.NewTransactionController(&transactionService, &userService, &authorizationService, config)
 	transactionDetailController := controller.NewTransactionDetailController(&transactionDetailService, config)
 	userController := controller.NewUserController(&userService, config)
 	messageController := controller.NewMessageController(&messageService)

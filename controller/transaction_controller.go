@@ -5,65 +5,84 @@ import (
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/middleware"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/service"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
 type TransactionController struct {
 	service.TransactionService
 	service.UserService
+	service.AuthorizationService
 	configuration.Config
+	responseBuilder *utils.ResponseBuilder
 }
 
-func NewTransactionController(transactionService *service.TransactionService, userService *service.UserService, config configuration.Config) *TransactionController {
-	return &TransactionController{TransactionService: *transactionService, Config: config, UserService: *userService}
+func NewTransactionController(
+	transactionService *service.TransactionService,
+	userService *service.UserService,
+	authService *service.AuthorizationService,
+	config configuration.Config,
+) *TransactionController {
+	return &TransactionController{
+		TransactionService:   *transactionService,
+		UserService:          *userService,
+		AuthorizationService: *authService,
+		Config:               config,
+		responseBuilder:      utils.NewResponseBuilder(),
+	}
 }
 
 func (c TransactionController) Route(app *fiber.App) {
-	app.Post("/v1/api/initialize-card-transaction", c.InitiateMobileMoneyPayment)
-	app.Post("/v1/api/payment-mobile-money", c.InitiateMobileMoneyPayment)
-	app.Post("/v1/api/recurring-payment", c.ProcessRecurringPayment)
-	app.Get("/v1/api/payment-status/:id", c.PaymentStatus)
-	app.Get("/v1/api/refinery-dashboard-data", c.GetRefineryDashboardData)
-	app.Get("/v1/api/admin-dashboard-data", c.GetAdminDashboardData)
-	app.Get("/v1/api/pending-orders", c.GetRefineryOrders)
-	app.Post("/v1/api/approve-or-reject-order", c.ApproveOrRejectOrder)
-	app.Get("/v1/api/get-driver-pending-orders", c.GetDriverPendingOrder)
-	app.Get("/v1/api/get-customer-pending-orders", c.GetCustomerPendingOrder)
-	app.Get("/v1/api/get-driver-completed-orders", c.GetDriverCompletedOrder)
-	app.Get("/v1/api/get-customer-orders", c.GetCustomerOrders)
-	app.Get("/v1/api/transaction-list", c.GetTransactions)
-	app.Get("/v1/api/transactions-by-country", c.GetTransactionsByCountryCode)
-	app.Get("/v1/api/mark-order-ready-for-delivery/:id", c.MarkOrderReadyForDelivery)
-	app.Get("/v1/api/close-order/:id", c.CloseOrder)
-	app.Get("/v1/api/order/:id", c.FindById)
-	app.Post("/v1/api/submit-rating", c.SubmitRating)
+	// Apply the JWT claims middleware to all authenticated routes
+	api := app.Group("/v1/api")
 
-	//app.Post("/v1/api/paystack/webook", controller.PayStackWebhook)
+	// Public routes (no auth required)
+	api.Get("/payment-status/:id", c.PaymentStatus)
+
+	// Protected routes (require authentication)
+	protected := api.Group("/", middleware.ExtractClaims(c.UserService), middleware.RequireClaims())
+	protected.Post("/initialize-card-transaction", c.InitiateMobileMoneyPayment)
+	protected.Post("/payment-mobile-money", c.InitiateMobileMoneyPayment)
+	protected.Post("/recurring-payment", c.ProcessRecurringPayment)
+	protected.Get("/refinery-dashboard-data", c.GetRefineryDashboardData)
+	protected.Get("/admin-dashboard-data", c.GetAdminDashboardData)
+	protected.Get("/pending-orders", c.GetRefineryOrders)
+	protected.Post("/approve-or-reject-order", c.ApproveOrRejectOrder)
+	protected.Get("/get-driver-pending-orders", c.GetDriverPendingOrder)
+	protected.Get("/get-customer-pending-orders", c.GetCustomerPendingOrder)
+	protected.Get("/get-driver-completed-orders", c.GetDriverCompletedOrder)
+	protected.Get("/get-customer-orders", c.GetCustomerOrders)
+	protected.Get("/transaction-list", c.GetTransactions)
+	protected.Get("/transactions-by-country", c.GetTransactionsByCountryCode)
+	protected.Get("/mark-order-ready-for-delivery/:id", c.MarkOrderReadyForDelivery)
+	protected.Get("/close-order/:id", c.CloseOrder)
+	protected.Get("/order/:id", c.FindById)
+	protected.Post("/submit-rating", c.SubmitRating)
 }
 
 func (c TransactionController) InitiateMobileMoneyPayment(ctx *fiber.Ctx) error {
 	var mobileMoneyRequestModel model.MobileMoneyRequestModel
-
 	err := ctx.BodyParser(&mobileMoneyRequestModel)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "Invalid request body"))
+	}
 
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	//mobileMoneyRequestModel.PhoneNumber = claims["phoneNumber"].(string)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	// Set user information from claims
 	mobileMoneyRequestModel.UserId = claims["userId"].(uint)
 	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
+
 	response := c.TransactionService.InitiateMobileMoneyTransaction(ctx.Context(), mobileMoneyRequestModel)
-	//var transactionStatus = response.(model.TransactionStatusModel)
 
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Success: true,
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    response,
-	})
-
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(response, "Mobile money payment initiated successfully"))
 }
 
 func (c TransactionController) PaymentStatus(ctx *fiber.Ctx) error {
@@ -98,11 +117,16 @@ func (c TransactionController) GetRefineryDashboardData(ctx *fiber.Ctx) error {
 }
 
 func (c TransactionController) GetRefineryOrders(ctx *fiber.Ctx) error {
-	var claims map[string]interface{}
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	refineryId := claims["refineryId"].(float64)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	refineryId, ok := claims["refineryId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "Refinery ID not found in token"))
+	}
 
 	// Extract country code from claims
 	countryCode := ""
@@ -112,14 +136,11 @@ func (c TransactionController) GetRefineryOrders(ctx *fiber.Ctx) error {
 
 	// Get refinery orders with country code filter
 	orders, err := c.TransactionService.GetRefineryOrders(ctx.Context(), uint(refineryId), countryCode)
-	exception.PanicLogging(err)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(c.responseBuilder.Error(fiber.StatusInternalServerError, err.Error()))
+	}
 
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    orders,
-		Success: true,
-	})
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(orders, "Orders retrieved successfully"))
 }
 
 func (c TransactionController) ApproveOrRejectOrder(ctx *fiber.Ctx) error {
@@ -183,33 +204,16 @@ func (c TransactionController) GetDriverCompletedOrder(ctx *fiber.Ctx) error {
 }
 
 func (c TransactionController) GetTransactions(ctx *fiber.Ctx) error {
-	// Get pagination parameters from the query string
-	pageStr := ctx.Query("page", "1")    // default to page 1 if not provided
-	limitStr := ctx.Query("limit", "10") // default to 10 items per page if not provided
-
-	// Convert string parameters to integers
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
-	}
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 1 {
-		limit = 10
-	}
+	// Extract pagination parameters using our utility
+	pagination := utils.ExtractPaginationParams(ctx)
 
 	// Get transactions with pagination
-	transactions, totalCount := c.TransactionService.GetTransactionsPaginated(ctx.Context(), page, limit)
+	transactions, totalCount := c.TransactionService.GetTransactionsPaginated(ctx.Context(), pagination.Page, pagination.Limit)
 
-	// Create pagination response
-	paginatedResponse := model.NewPaginationResponse(transactions, page, limit, totalCount)
-
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    paginatedResponse,
-		Success: true,
-	})
+	// Use response builder for consistent response format
+	return ctx.Status(fiber.StatusOK).JSON(
+		c.responseBuilder.Pagination(transactions, pagination.Page, pagination.Limit, totalCount),
+	)
 }
 
 func (c TransactionController) GetAdminDashboardData(ctx *fiber.Ctx) error {
