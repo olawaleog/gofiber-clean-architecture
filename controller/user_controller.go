@@ -22,21 +22,24 @@ type UserController struct {
 }
 
 func (controller UserController) Route(app *fiber.App) {
+	// Public routes (no auth required)
 	app.Post("/v1/api/authentication", controller.Authentication)
 	app.Post("/v1/api/register", controller.Register)
-	app.Put("/v1/api/users/:id", controller.UpdateUser)
 	app.Post("/v1/api/register-customer", controller.RegisterCustomer)
-	app.Post("/v1/api/change-password", controller.ChangePassword)
 	app.Post("/v1/api/reset-password", controller.ResetPassword)
-	app.Post("/v1/api/save-address", controller.SaveAddress)
-	app.Get("/v1/api/get-addresses", controller.GetAddresses)
-	app.Get("/v1/api/users", controller.ListUsers)
 	app.Post("/v1/api/verify-otp", controller.ValidateOtp)
 	app.Post("/v1/api/post-new-password", controller.UpdateUserPassword)
-	app.Post("/v1/api/update-profile", controller.UpdateProfile)
-	app.Post("/v1/api/update-fcm-token", controller.UpdateFcmToken)
 
-	app.Get("/v1/api/users/:id", controller.FindUserById)
+	// Protected routes (require authentication)
+	protected := app.Group("/v1/api", middleware.ExtractClaims(controller.UserService), middleware.RequireClaims())
+	protected.Put("/users/:id", controller.UpdateUser)
+	protected.Post("/change-password", controller.ChangePassword)
+	protected.Post("/save-address", controller.SaveAddress)
+	protected.Get("/get-addresses", controller.GetAddresses)
+	protected.Get("/users", controller.ListUsers)
+	protected.Post("/update-profile", controller.UpdateProfile)
+	protected.Post("/update-fcm-token", controller.UpdateFcmToken)
+	protected.Get("/users/:id", controller.FindUserById)
 }
 
 // Register Registeration func Register user.
@@ -142,20 +145,39 @@ func (controller UserController) Authentication(c *fiber.Ctx) error {
 func (controller UserController) ChangePassword(c *fiber.Ctx) error {
 	var request model.ChangePasswordModel
 	err := c.BodyParser(&request)
-	exception.PanicLogging(err)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    fiber.StatusBadRequest,
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
 
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(model.GeneralResponse{
+			Code:    fiber.StatusUnauthorized,
+			Message: "Authentication required",
+			Success: false,
+		})
+	}
+
+	// Extract the token from header - we still need this for the service
 	token := c.Get("Authorization")
 
-	_ = controller.UserService.ChangePassword(c.Context(), token, request)
-	//for _, userRole := range result.UserRole {
-	//	userRoles = append(userRoles, map[string]interface{}{
-	//		"role": userRole.Role,
-	//	})
-	//}
+	err = controller.UserService.ChangePassword(c.Context(), token, request)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
+			Code:    fiber.StatusInternalServerError,
+			Message: err.Error(),
+			Success: false,
+		})
+	}
 
 	return c.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    200,
-		Message: "Success",
+		Code:    fiber.StatusOK,
+		Message: "Password changed successfully",
 		Success: true,
 	})
 }
@@ -242,16 +264,53 @@ func (controller UserController) UpdateUserPassword(ctx *fiber.Ctx) error {
 func (controller UserController) UpdateProfile(ctx *fiber.Ctx) error {
 	var request model.UserModel
 	err := ctx.BodyParser(&request)
-	exception.PanicLogging(err)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    fiber.StatusBadRequest,
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(model.GeneralResponse{
+			Code:    fiber.StatusUnauthorized,
+			Message: "Authentication required",
+			Success: false,
+		})
+	}
+
+	// Extract the token from header - we still need this for the service
 	token := ctx.Get("Authorization")
+
+	// Get id from params if provided
 	param := ctx.Params("id")
-	id, err := strconv.Atoi(param)
-	request.Id = uint(id)
+	if param != "" {
+		id, err := strconv.Atoi(param)
+		if err != nil {
+			return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+				Code:    fiber.StatusBadRequest,
+				Message: "Invalid user ID",
+				Success: false,
+			})
+		}
+		request.Id = uint(id)
+	}
+
 	user, err := controller.UserService.UpdateProfile(ctx.Context(), request, token)
-	exception.PanicLogging(err)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
+			Code:    fiber.StatusInternalServerError,
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    200,
-		Message: "User updated successfully",
+		Code:    fiber.StatusOK,
+		Message: "User profile updated successfully",
 		Success: true,
 		Data:    user,
 	})
@@ -260,35 +319,87 @@ func (controller UserController) UpdateProfile(ctx *fiber.Ctx) error {
 func (controller UserController) SaveAddress(ctx *fiber.Ctx) error {
 	var request model.AddressModel
 	err := ctx.BodyParser(&request)
-	exception.PanicLogging(err)
-	token := ctx.Get("Authorization")
-	claims, err := controller.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	request.UserId = uint(claims["userId"].(float64))
-	fmt.Println(request)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    fiber.StatusBadRequest,
+			Message: "Invalid request body",
+			Success: false,
+		})
+	}
+
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(model.GeneralResponse{
+			Code:    fiber.StatusUnauthorized,
+			Message: "Authentication required",
+			Success: false,
+		})
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    fiber.StatusBadRequest,
+			Message: "User ID not found in token",
+			Success: false,
+		})
+	}
+
+	request.UserId = uint(userId)
+
 	res, err := controller.UserService.SaveAddress(ctx.Context(), request)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
+			Code:    fiber.StatusInternalServerError,
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    200,
-		Message: "User updated successfully",
+		Code:    fiber.StatusOK,
+		Message: "Address saved successfully",
 		Success: true,
 		Data:    res,
 	})
 }
 
 func (controller UserController) GetAddresses(ctx *fiber.Ctx) error {
-	token := ctx.Get("Authorization")
-	claims, err := controller.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	userId := uint(claims["userId"].(float64))
-	addresses, err := controller.UserService.GetAddresses(ctx.Context(), userId)
-	exception.PanicLogging(err)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(model.GeneralResponse{
+			Code:    fiber.StatusUnauthorized,
+			Message: "Authentication required",
+			Success: false,
+		})
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
+			Code:    fiber.StatusBadRequest,
+			Message: "User ID not found in token",
+			Success: false,
+		})
+	}
+
+	addresses, err := controller.UserService.GetAddresses(ctx.Context(), uint(userId))
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(model.GeneralResponse{
+			Code:    fiber.StatusInternalServerError,
+			Message: err.Error(),
+			Success: false,
+		})
+	}
+
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    200,
-		Message: "Successful",
+		Code:    fiber.StatusOK,
+		Message: "Addresses retrieved successfully",
 		Data:    addresses,
 		Success: true,
 	})
-
 }
 
 func (controller UserController) UpdateFcmToken(ctx *fiber.Ctx) error {

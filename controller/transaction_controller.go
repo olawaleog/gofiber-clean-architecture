@@ -101,19 +101,23 @@ func (c TransactionController) PaymentStatus(ctx *fiber.Ctx) error {
 //		err := ctx.BodyParser(&status)
 //	}
 func (c TransactionController) GetRefineryDashboardData(ctx *fiber.Ctx) error {
-	var claims map[string]interface{}
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	refineryId := claims["refineryId"].(float64)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	refineryId, ok := claims["refineryId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "Refinery ID not found in token"))
+	}
+
 	refineryData, err := c.TransactionService.GetRefineryDashboardData(ctx.Context(), uint(refineryId))
-	exception.PanicLogging(err)
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    refineryData,
-		Success: true,
-	})
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(c.responseBuilder.Error(fiber.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(refineryData, "Dashboard data retrieved successfully"))
 }
 
 func (c TransactionController) GetRefineryOrders(ctx *fiber.Ctx) error {
@@ -159,48 +163,54 @@ func (c TransactionController) ApproveOrRejectOrder(ctx *fiber.Ctx) error {
 }
 
 func (c TransactionController) GetDriverPendingOrder(ctx *fiber.Ctx) error {
-	var claims map[string]interface{}
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	userId := claims["userId"].(float64)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "User ID not found in token"))
+	}
+
 	orders := c.TransactionService.GetDriverPendingOrder(ctx.Context(), userId, 1)
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    orders,
-		Success: true,
-	})
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(orders, "Driver pending orders retrieved successfully"))
 }
 
 func (c TransactionController) GetCustomerPendingOrder(ctx *fiber.Ctx) error {
-	var claims map[string]interface{}
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	userId := claims["userId"].(float64)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "User ID not found in token"))
+	}
+
 	orders := c.TransactionService.GetCustomerPendingOrder(ctx.Context(), userId, 1)
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    orders,
-		Success: true,
-	})
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(orders, "Customer pending orders retrieved successfully"))
 }
 
 func (c TransactionController) GetDriverCompletedOrder(ctx *fiber.Ctx) error {
-	var claims map[string]interface{}
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	userId := claims["userId"].(float64)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "User ID not found in token"))
+	}
+
 	orders := c.TransactionService.GetDriverCompletedOrder(ctx.Context(), userId, 1)
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    orders,
-		Success: true,
-	})
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(orders, "Driver completed orders retrieved successfully"))
 }
 
 func (c TransactionController) GetTransactions(ctx *fiber.Ctx) error {
@@ -228,19 +238,23 @@ func (c TransactionController) GetAdminDashboardData(ctx *fiber.Ctx) error {
 }
 
 func (c TransactionController) GetCustomerOrders(ctx *fiber.Ctx) error {
-	var claims map[string]interface{}
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	userId := claims["userId"].(float64)
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "User ID not found in token"))
+	}
+
 	orders, err := c.TransactionService.GetCustomerOrders(ctx.Context(), uint(userId))
-	exception.PanicLogging(err)
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    orders,
-		Success: true,
-	})
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(c.responseBuilder.Error(fiber.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(orders, "Customer orders retrieved successfully"))
 }
 
 func (c TransactionController) FindById(ctx *fiber.Ctx) error {
@@ -259,21 +273,23 @@ func (c TransactionController) FindById(ctx *fiber.Ctx) error {
 func (c TransactionController) ProcessRecurringPayment(ctx *fiber.Ctx) error {
 	var mobileMoneyRequestModel model.MobileMoneyRequestModel
 	err := ctx.BodyParser(&mobileMoneyRequestModel)
-	exception.PanicLogging(err)
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	//mobileMoneyRequestModel.PhoneNumber = claims["phoneNumber"].(string)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "Invalid request body"))
+	}
+
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	// Set user information from claims
 	mobileMoneyRequestModel.UserId = claims["userId"].(uint)
 	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
-	response := c.TransactionService.ProcessRecurringPayment(ctx.Context(), mobileMoneyRequestModel)
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    response,
-		Success: true,
-	})
 
+	response := c.TransactionService.ProcessRecurringPayment(ctx.Context(), mobileMoneyRequestModel)
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(response, "Recurring payment processed successfully"))
 }
 
 func (c TransactionController) MarkOrderReadyForDelivery(ctx *fiber.Ctx) error {
@@ -303,102 +319,67 @@ func (c TransactionController) CloseOrder(ctx *fiber.Ctx) error {
 func (c TransactionController) SubmitRating(ctx *fiber.Ctx) error {
 	var ratingModel model.RatingModel
 	err := ctx.BodyParser(&ratingModel)
-	exception.PanicLogging(err)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "Invalid request body"))
+	}
 
-	token := ctx.Get("Authorization")
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	exception.PanicLogging(err)
-	ratingModel.UserId = uint(claims["userId"].(float64))
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(c.responseBuilder.Error(fiber.StatusUnauthorized, "Authentication required"))
+	}
+
+	userId, ok := claims["userId"].(float64)
+	if !ok {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "User ID not found in token"))
+	}
+
+	ratingModel.UserId = uint(userId)
 
 	err = c.TransactionService.SubmitRating(ctx.Context(), ratingModel)
-	exception.PanicLogging(err)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(c.responseBuilder.Error(fiber.StatusInternalServerError, err.Error()))
+	}
 
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Rating submitted successfully",
-		Data:    nil,
-		Success: true,
-	})
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(nil, "Rating submitted successfully"))
 }
 
 // GetTransactionsByCountryCode returns transactions filtered by country code or all transactions
 func (c TransactionController) GetTransactionsByCountryCode(ctx *fiber.Ctx) error {
-	// Get pagination parameters from the query string
-	pageStr := ctx.Query("page", "1")    // default to page 1 if not provided
-	limitStr := ctx.Query("limit", "10") // default to 10 items per page if not provided
+	// Extract pagination parameters using our utility
+	pagination := utils.ExtractPaginationParams(ctx)
 
-	// Convert string parameters to integers
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
-	}
-
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 1 {
-		limit = 10
-	}
-
-	// Get country code from token
+	// Get country code from claims
 	countryCode := ""
-	token := ctx.Get("Authorization")
-	if token != "" {
-		claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-		if err == nil && claims["countryCode"] != nil {
-			// Use the country code from JWT claims
-			countryCode, _ = claims["countryCode"].(string)
-		}
+	claims, ok := middleware.GetClaims(ctx)
+	if ok && claims["countryCode"] != nil {
+		countryCode, _ = claims["countryCode"].(string)
 	}
 
-	// Allow override via query parameter for admin users (optional)
+	// Allow override via query parameter for admin users
 	queryCountryCode := ctx.Query("country_code", "")
-	if queryCountryCode != "" && c.isAdminUser(ctx) {
+	if queryCountryCode != "" && c.AuthorizationService.IsAdmin(claims) {
 		countryCode = queryCountryCode
 	}
 
 	// Get transactions with country code filter and pagination
-	transactions, totalCount := c.TransactionService.GetTransactionsByCountryCode(ctx.Context(), countryCode, page, limit)
+	transactions, totalCount := c.TransactionService.GetTransactionsByCountryCode(
+		ctx.Context(), countryCode, pagination.Page, pagination.Limit)
 
-	// Create pagination response
-	paginatedResponse := model.NewPaginationResponse(transactions, page, limit, totalCount)
-
-	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
-		Code:    fiber.StatusOK,
-		Message: "Successful",
-		Data:    paginatedResponse,
-		Success: true,
-	})
+	// Use response builder for consistent response format
+	return ctx.Status(fiber.StatusOK).JSON(
+		c.responseBuilder.Pagination(transactions, pagination.Page, pagination.Limit, totalCount),
+	)
 }
 
 // isAdminUser checks if the current user has admin privileges
 func (c TransactionController) isAdminUser(ctx *fiber.Ctx) bool {
-	token := ctx.Get("Authorization")
-	if token == "" {
+	// Get claims from context (set by middleware)
+	claims, ok := middleware.GetClaims(ctx)
+	if !ok {
 		return false
 	}
 
-	claims, err := c.UserService.GetClaimsFromToken(ctx.Context(), token)
-	if err != nil {
-		return false
-	}
-
-	// Check the role in claims
-	if claims["roles"] != nil {
-		roles, ok := claims["roles"].([]interface{})
-		if ok && len(roles) > 0 {
-			for _, role := range roles {
-				if roleMap, ok := role.(map[string]interface{}); ok {
-					if roleVal, exists := roleMap["role"].(string); exists && roleVal == "admin" {
-						return true
-					}
-				}
-			}
-		}
-	}
-
-	// Check user role field directly
-	if userRole, exists := claims["role"].(string); exists && userRole == "admin" {
-		return true
-	}
-
-	return false
+	// Use AuthorizationService to check if the user is an admin
+	return c.AuthorizationService.IsAdmin(claims)
 }

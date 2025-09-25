@@ -11,6 +11,11 @@ func ExtractClaims(userService service.UserService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token := c.Get("Authorization")
 		if token != "" {
+			// Check for Bearer prefix and remove it if present
+			if len(token) > 7 && token[:7] == "Bearer " {
+				token = token[7:]
+			}
+
 			claims, err := userService.GetClaimsFromToken(c.Context(), token)
 			if err != nil {
 				return exception.UnauthorizedError{
