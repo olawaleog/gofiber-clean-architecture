@@ -205,11 +205,11 @@ func (controller UserController) ListUsers(c *fiber.Ctx) error {
 		JSON(users)
 }
 
-func (u UserController) FindUserById(c *fiber.Ctx) error {
+func (controller UserController) FindUserById(c *fiber.Ctx) error {
 	var user model.UserModel
 	userId, err := strconv.Atoi(c.Params("id"))
 	exception.PanicLogging(err)
-	user, err = u.UserService.FindByID(c.Context(), userId)
+	user, err = controller.UserService.FindByID(c.Context(), userId)
 	exception.PanicLogging(err)
 	return c.Status(fiber.StatusOK).JSON(user)
 }
