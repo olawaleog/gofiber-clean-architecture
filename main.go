@@ -80,7 +80,7 @@ func main() {
 	transactionService := service.NewTransactionServiceImpl(&transactionRepository, &orderRepository, &paymentMethodRepository, &httpService, config, &notificationService, &paymentConfigRepository)
 	transactionDetailService := service.NewTransactionDetailServiceImpl(&transactionDetailRepository)
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
-	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService)
+	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService, config)
 	truckService := service.NewTruckServiceImpl(&truckRepository, &userService, &messageService)
 	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService, config)
 	paymentService := service.NewPaymentService(&paymentRepository)

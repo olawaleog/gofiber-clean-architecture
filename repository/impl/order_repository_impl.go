@@ -89,11 +89,14 @@ func (o OrderRepositoryImpl) GetRefineryOrders(ctx context.Context, u uint, coun
 		Preload("Transaction.User").
 		Preload("Truck").
 		Preload("Truck.User").
+		Preload("Transaction.Address").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
 		Joins("JOIN tb_trucks ON tb_trucks.id = tb_orders.truck_id").
-		Joins("JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id")
+		Joins("JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id").
+		Order("tb_orders.id desc").
+		Order("tb_orders.status desc")
 
 	// Filter by country code if provided
 	if countryCode != "" {
@@ -135,6 +138,7 @@ func (o OrderRepositoryImpl) FindCustomerOrdersByUserId(ctx context.Context, id 
 		Preload("Transaction").
 		Preload("Refinery").
 		Preload("Transaction.User").
+		Preload("Transaction.Address").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
 		Joins("JOIN tb_refineries ON tb_refineries.id = tb_orders.refinery_id").
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
@@ -168,9 +172,9 @@ func (o OrderRepositoryImpl) FindCompletedDriverOrdersByUserId(ctx context.Conte
 }
 
 // Add this method to your TransactionRepositoryImpl
-func (repository *OrderRepositoryImpl) FindInitiatedOrders(ctx context.Context, duration time.Duration) ([]entity.Order, error) {
+func (o *OrderRepositoryImpl) FindInitiatedOrders(ctx context.Context, duration time.Duration) ([]entity.Order, error) {
 	var orders []entity.Order
-	result := repository.DB.WithContext(ctx).
+	result := o.DB.WithContext(ctx).
 		Preload("Transaction").
 		Preload("Transaction.User").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").

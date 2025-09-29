@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
@@ -16,14 +17,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func NewUserServiceImpl(userRepository *repository.UserRepository, messageService *service.MessageService, localGovernmentService *service.LocalGovernmentService) service.UserService {
-	return &userServiceImpl{UserRepository: *userRepository, MessageService: *messageService, LocalGovernmentService: *localGovernmentService}
+func NewUserServiceImpl(userRepository *repository.UserRepository, messageService *service.MessageService, localGovernmentService *service.LocalGovernmentService, config configuration.Config) service.UserService {
+	return &userServiceImpl{
+		UserRepository:         *userRepository,
+		MessageService:         *messageService,
+		LocalGovernmentService: *localGovernmentService,
+		Config:                 config,
+	}
 }
 
 type userServiceImpl struct {
 	repository.UserRepository
 	service.MessageService
 	service.LocalGovernmentService
+	Config configuration.Config
 }
 
 func (u *userServiceImpl) FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) entity.User {
@@ -157,7 +164,7 @@ func (u *userServiceImpl) FindByID(ctx context.Context, id int) (model.UserModel
 	return userModel, nil
 }
 
-func (userService *userServiceImpl) GetClaimsFromToken(ctx context.Context, tokenString string) (map[string]interface{}, error) {
+func (u *userServiceImpl) GetClaimsFromToken(ctx context.Context, tokenString string) (map[string]interface{}, error) {
 	if tokenString == "" {
 		return nil, fmt.Errorf("missing token")
 	}
@@ -168,7 +175,7 @@ func (userService *userServiceImpl) GetClaimsFromToken(ctx context.Context, toke
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte("secret"), nil
+		return []byte(u.Config.Get("JWT_SECRET_KEY")), nil
 	})
 
 	if err != nil {
@@ -182,20 +189,20 @@ func (userService *userServiceImpl) GetClaimsFromToken(ctx context.Context, toke
 	return nil, fmt.Errorf("invalid token")
 }
 
-func (userService *userServiceImpl) ChangePassword(ctx context.Context, token string, model model.ChangePasswordModel) entity.User {
-	claims, err := userService.GetClaimsFromToken(ctx, token)
+func (u *userServiceImpl) ChangePassword(ctx context.Context, token string, model model.ChangePasswordModel) entity.User {
+	claims, err := u.GetClaimsFromToken(ctx, token)
 	exception.PanicLogging(err)
-	userResult, err := userService.UserRepository.ChangePassword(ctx, claims, model)
+	userResult, err := u.UserRepository.ChangePassword(ctx, claims, model)
 	exception.PanicLogging(err)
 	return userResult
 }
 
-func (userService *userServiceImpl) SeedUser(ctx context.Context) {
-	userService.UserRepository.SeedUser(ctx)
+func (u *userServiceImpl) SeedUser(ctx context.Context) {
+	u.UserRepository.SeedUser(ctx)
 }
 
-func (userService *userServiceImpl) Authentication(ctx context.Context, model model.LoginModel) entity.User {
-	userResult, err := userService.UserRepository.Authentication(ctx, model.Username)
+func (u *userServiceImpl) Authentication(ctx context.Context, model model.LoginModel) entity.User {
+	userResult, err := u.UserRepository.Authentication(ctx, model.Username)
 	if err != nil {
 		panic(exception.UnauthorizedError{
 			Message: err.Error(),
@@ -215,15 +222,15 @@ func (userService *userServiceImpl) Authentication(ctx context.Context, model mo
 	return userResult
 }
 
-func (userService *userServiceImpl) Register(ctx context.Context, userModel model.UserModel) entity.User {
+func (u *userServiceImpl) Register(ctx context.Context, userModel model.UserModel) entity.User {
 	userModel.IsActive = true
 	if userModel.Password == "" {
 		// Generate a random password if not provided
 		userModel.Password, _ = common.GeneratePassword(8)
 	}
-	user, err := userService.UserRepository.Create(userModel)
+	user, err := u.UserRepository.Create(userModel)
 	exception.PanicLogging(err)
-	template := userService.MessageService.FindMessageTemplateByName(ctx, userModel.Role+"_template")
+	template := u.MessageService.FindMessageTemplateByName(ctx, userModel.Role+"_template")
 
 	data := map[string]string{
 		"FirstName": user.FirstName,
@@ -240,7 +247,7 @@ func (userService *userServiceImpl) Register(ctx context.Context, userModel mode
 		Subject: template.Subject,
 		Message: message,
 	}
-	userService.MessageService.SendEmail(ctx, emailMessageModel)
+	u.MessageService.SendEmail(ctx, emailMessageModel)
 	return user
 }
 
@@ -276,15 +283,15 @@ func (u *userServiceImpl) RegisterCustomer(ctx context.Context, userModel model.
 	return userModel
 }
 
-func (userService *userServiceImpl) Create(ctx context.Context, model model.UserModel, file *multipart.FileHeader) entity.User {
+func (u *userServiceImpl) Create(ctx context.Context, model model.UserModel, file *multipart.FileHeader) entity.User {
 	model.IsActive = false
-	user, err := userService.UserRepository.Create(model)
+	user, err := u.UserRepository.Create(model)
 	exception.PanicLogging(err)
 	return user
 }
 
-func (userService *userServiceImpl) List(ctx context.Context) ([]entity.User, error) {
-	return userService.UserRepository.List(ctx)
+func (u *userServiceImpl) List(ctx context.Context) ([]entity.User, error) {
+	return u.UserRepository.List(ctx)
 }
 func ReplacePlaceholders(template string, placeholders map[string]string) string {
 	for key, value := range placeholders {

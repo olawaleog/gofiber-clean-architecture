@@ -24,6 +24,8 @@ type Order struct {
 	WaterType       string      `gorm:"column:water_type;type:text"`
 	Rating          uint        `gorm:"column:rating;type:int"`
 	Review          string      `gorm:"column:review;type:text"`
+	AddressId       uint        `gorm:"column:address_id;type:int"`
+	Address         *Address    `gorm:"foreignKey:AddressId;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }
 
 func (Order) TableName() string {

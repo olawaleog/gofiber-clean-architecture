@@ -17,7 +17,7 @@ func GenerateToken(username string, roles []map[string]interface{}, user entity.
 	claims := jwt.MapClaims{
 		"username":     username,
 		"roles":        roles,
-		"exp":          time.Now().Add(time.Hour * time.Duration(jwtExpired)).Unix(),
+		"exp":          time.Now().Add(time.Minute * time.Duration(jwtExpired)).Unix(),
 		"userId":       user.ID,
 		"emailAddress": user.Email,
 		"phoneNumber":  user.PhoneNumber,

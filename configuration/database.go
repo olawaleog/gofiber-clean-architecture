@@ -53,6 +53,7 @@ func NewDatabase(config Config) *gorm.DB {
 		&entity.LocalGovernmentArea{}, &entity.Address{}, &entity.Truck{},
 		&entity.OneTimePassword{}, &entity.Refinery{}, &entity.PaymentMethod{},
 		&entity.Order{}, &entity.Notification{}, &entity.PaymentConfiguration{},
+		&entity.Setting{},
 	)
 	//autoMigrate
 	//err = db.AutoMigrate(&entity.Product{})

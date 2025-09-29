@@ -126,10 +126,11 @@ func (t *transactionServiceImpl) GetCustomerOrders(ctx context.Context, u uint) 
 					PlaceId:     order.Transaction.Address.PlaceId,
 				},
 			},
-			Status:        order.Status,
-			TransactionId: order.TransactionId,
-			TruckId:       *order.TruckId,
-			CreatedAt:     order.CreatedAt,
+			Status:          order.Status,
+			TransactionId:   order.TransactionId,
+			TruckId:         *order.TruckId,
+			CreatedAt:       order.CreatedAt,
+			DeliveryAddress: order.Transaction.Address.Description,
 			//UserId:       u,
 			//UserName:     "",
 			//UserPhoneNumber:"",
@@ -268,7 +269,7 @@ func (t *transactionServiceImpl) GetCustomerPendingOrder(ctx context.Context, us
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
 			},
-			DeliveryAddress: order.DeliveryAddress,
+			DeliveryAddress: order.Transaction.Address.Description,
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
@@ -374,6 +375,18 @@ func (t *transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, order
 		order.Status = 2
 		if orderModel.TruckId != 0 {
 			order.TruckId = &orderModel.TruckId
+
+			//ToDo: Push notification to rider suing rabbitmq
+			//driver := truck.User
+			//if driver.Token != "" {
+			//	err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
+			//		Token:       driver.Token,
+			//		Title:       "Order Assigned",
+			//		Body:        "An order has been assigned to you!",
+			//		Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
+			//		ClickAction: "OPEN_ORDER_DETAILS",
+			//	})
+			//}
 		}
 	} else {
 		order.Status -= 1
@@ -449,7 +462,7 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint, 
 					PhoneNumber:  order.Truck.User.PhoneNumber,
 				},
 			},
-			DeliveryAddress: order.DeliveryAddress,
+			DeliveryAddress: order.Transaction.Address.Description,
 			RefineryAddress: order.RefineryAddress,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
@@ -516,6 +529,7 @@ func (t *transactionServiceImpl) PaymentStatus(ctx context.Context, id string) m
 				Capacity:        transaction.Capacity,
 				Type:            transaction.Type,
 				WaterType:       request.Type,
+				AddressId:       transaction.AddressId,
 			}
 			order = t.OrderRepository.Insert(ctx, order)
 		}
@@ -759,7 +773,7 @@ func (t *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context,
 
 		order.Status = 1
 		order.UpdatedAt = time.Now()
-		order.TruckId = &truck.Id
+		//order.TruckId = &truck.Id
 
 		err := t.OrderRepository.Update(ctx, order)
 
@@ -771,17 +785,6 @@ func (t *transactionServiceImpl) ProcessPendingTransactions(ctx context.Context,
 				Token:       user.FcmToken,
 				Title:       "Order Ready",
 				Body:        "Your order has been confirm and is processing!",
-				Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
-				ClickAction: "OPEN_ORDER_DETAILS",
-			})
-		}
-
-		driver := truck.User
-		if driver.Token != "" {
-			err = t.NotificationService.SendToDevice(context.Background(), model.NotificationModel{
-				Token:       driver.Token,
-				Title:       "Order Assigned",
-				Body:        "An order has been assigned to you!",
 				Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "ready_for_delivery"},
 				ClickAction: "OPEN_ORDER_DETAILS",
 			})

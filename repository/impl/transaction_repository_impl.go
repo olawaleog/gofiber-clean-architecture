@@ -28,10 +28,12 @@ func (transactionRepository *transactionRepositoryImpl) GetAdminDashboardData(ct
 	var totalRefineryCount int
 	var customerCount int
 	var totalOrderAmount float64
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	err := transactionRepository.DB.WithContext(ctx).
 		Preload("Transaction").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
-		Where("tb_transactions.status = ?", "success").
+		Where("tb_transactions.status = ? AND tb_transactions.created_at >= ?", "success", startOfDay).
 		Find(&orders).Error
 	exception.PanicLogging(err)
 	for _, order := range orders {
@@ -133,10 +135,13 @@ func (transactionRepository *transactionRepositoryImpl) GetRefineryDashboardData
 	var processedRequestsCount int
 	var revenue float64
 
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
 	err := transactionRepository.DB.WithContext(ctx).
 		Preload("Transaction").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
-		Where("tb_transactions.status = ?", "success").
+		Where("tb_transactions.status = ? AND tb_transactions.created_at >= ?", "success", startOfDay).
 		Find(&orders).Error
 	exception.PanicLogging(err)
 	for _, order := range orders {

@@ -55,7 +55,7 @@ func (c TransactionController) Route(app *fiber.App) {
 	protected.Get("/get-customer-pending-orders", c.GetCustomerPendingOrder)
 	protected.Get("/get-driver-completed-orders", c.GetDriverCompletedOrder)
 	protected.Get("/get-customer-orders", c.GetCustomerOrders)
-	protected.Get("/transaction-list", c.GetTransactions)
+	protected.Get("/list", c.GetTransactions)
 	protected.Get("/transactions-by-country", c.GetTransactionsByCountryCode)
 	protected.Get("/mark-order-ready-for-delivery/:id", c.MarkOrderReadyForDelivery)
 	protected.Get("/close-order/:id", c.CloseOrder)
@@ -77,7 +77,7 @@ func (c TransactionController) InitiateMobileMoneyPayment(ctx *fiber.Ctx) error 
 	}
 
 	// Set user information from claims
-	mobileMoneyRequestModel.UserId = claims["userId"].(uint)
+	mobileMoneyRequestModel.UserId = uint(claims["userId"].(float64))
 	mobileMoneyRequestModel.EmailAddress = claims["emailAddress"].(string)
 
 	response := c.TransactionService.InitiateMobileMoneyTransaction(ctx.Context(), mobileMoneyRequestModel)
