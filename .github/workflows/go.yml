@@ -38,4 +38,4 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           cd /var/www/api
-          sudo systemctl restart aquawizz
+          sudo systemctl restart aqua-wizz
