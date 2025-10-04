@@ -128,7 +128,7 @@ func (t *transactionServiceImpl) GetCustomerOrders(ctx context.Context, u uint) 
 			},
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         *order.TruckId,
+			TruckId:         order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			DeliveryAddress: order.Transaction.Address.Description,
 			//UserId:       u,
@@ -213,7 +213,7 @@ func (t *transactionServiceImpl) GetDriverPendingOrder(ctx context.Context, user
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         *order.TruckId,
+			TruckId:         order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			RefineryAddress: order.RefineryAddress,
 			RefineryPlaceId: order.RefineryPlaceId,
@@ -273,7 +273,7 @@ func (t *transactionServiceImpl) GetCustomerPendingOrder(ctx context.Context, us
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         *order.TruckId,
+			TruckId:         order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			RefineryAddress: order.RefineryAddress,
 			RefineryPlaceId: order.RefineryPlaceId,
@@ -335,7 +335,7 @@ func (t *transactionServiceImpl) GetDriverCompletedOrder(ctx context.Context, us
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         *order.TruckId,
+			TruckId:         order.TruckId,
 			CreatedAt:       order.CreatedAt,
 			RefineryAddress: order.RefineryAddress,
 			RefineryPlaceId: order.RefineryPlaceId,
@@ -374,7 +374,7 @@ func (t *transactionServiceImpl) ApproveOrRejectOrder(ctx context.Context, order
 	if orderModel.Action == "approve" {
 		order.Status = 2
 		if orderModel.TruckId != 0 {
-			order.TruckId = &orderModel.TruckId
+			order.TruckId = orderModel.TruckId
 
 			//ToDo: Push notification to rider suing rabbitmq
 			//driver := truck.User
@@ -466,7 +466,7 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint, 
 			RefineryAddress: order.RefineryAddress,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,
-			TruckId:         *order.TruckId,
+			TruckId:         order.TruckId,
 			CreatedAt:       order.CreatedAt,
 		})
 	}

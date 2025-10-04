@@ -26,6 +26,15 @@ type userRepositoryImpl struct {
 	*gorm.DB
 }
 
+func (u *userRepositoryImpl) FineAddressById(ctx context.Context, id uint) (entity.Address, error) {
+	var address entity.Address
+	err := u.DB.WithContext(ctx).Where("id = ?", id).First(&address).Error
+	if err != nil {
+		return entity.Address{}, errors.New("address not found")
+	}
+	return address, nil
+}
+
 func (u *userRepositoryImpl) FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) (entity.User, error) {
 	var user entity.User
 	err := u.DB.WithContext(ctx).Where("username = ? or phone_number = ? or email = ?", userModel.PhoneNumber, userModel.PhoneNumber, userModel.EmailAddress).First(&user).Error
@@ -48,21 +57,22 @@ func (u *userRepositoryImpl) FindAllAddress(ctx context.Context, id uint) ([]mod
 			Id:          address.ID,
 			Longitude:   toFloat64(address.Longitude),
 			Latitude:    toFloat64(address.Latitude),
+			CountryCode: address.CountryCode,
 		})
 	}
 	return result, nil
 }
 
-func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request model.AddressModel) (entity.Address, error) {
+func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request map[string]interface{}) (entity.Address, error) {
 	var user entity.User
-	err := u.DB.WithContext(ctx).Where("id = ?", request.UserId).First(&user).Error
+	err := u.DB.WithContext(ctx).Where("id = ?", request["userId"]).First(&user).Error
 	if err != nil {
 		return entity.Address{}, errors.New("user not found")
 	}
 
 	// Check for existing address by PlaceId or Description
 	var existingAddress entity.Address
-	err = u.DB.WithContext(ctx).Where("user_id = ? AND (place_id = ? OR description = ?)", request.UserId, request.PlaceId, request.Description).First(&existingAddress).Error
+	err = u.DB.WithContext(ctx).Where("user_id = ? AND (place_id = ? OR description = ?)", request["userId"], request["placeId"], request["description"]).First(&existingAddress).Error
 	if err == nil {
 		return existingAddress, nil
 	} else if err != gorm.ErrRecordNotFound {
@@ -82,11 +92,12 @@ func (u *userRepositoryImpl) SaveAddress(ctx context.Context, request model.Addr
 		IsMain:       true,
 		PostalCode:   postalCode,
 		Region:       region,
-		UserId:       request.UserId,
-		Description:  request.Description,
-		PlaceId:      request.PlaceId,
-		Longitude:    strconv.FormatFloat(request.Longitude, 'f', -1, 64),
-		Latitude:     strconv.FormatFloat(request.Latitude, 'f', -1, 64),
+		UserId:       request["userId"].(uint),
+		Description:  request["description"].(string),
+		PlaceId:      request["place_id"].(string),
+		Longitude:    strconv.FormatFloat(request["longitude"].(float64), 'f', -1, 64),
+		Latitude:     strconv.FormatFloat(request["latitude"].(float64), 'f', -1, 64),
+		CountryCode:  request["country_code"].(string),
 	}
 
 	err = u.DB.WithContext(ctx).Create(&address).Error

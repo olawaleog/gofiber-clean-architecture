@@ -3,6 +3,7 @@ package entity
 import (
 	"database/sql/driver"
 	"encoding/json"
+
 	"gorm.io/gorm"
 )
 
@@ -34,6 +35,7 @@ type Address struct {
 	Description  string `gorm:"column:description;type:varchar(100)"`
 	StreetNumber string `gorm:"column:street_number;type:varchar(100)"`
 	PlaceId      string `gorm:"column:place_id;type:varchar(100)"`
+	CountryCode  string `gorm:"column:country_code;type:varchar(10)"`
 }
 
 func (Address) TableName() string {

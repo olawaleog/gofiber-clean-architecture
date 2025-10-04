@@ -33,6 +33,22 @@ type userServiceImpl struct {
 	Config configuration.Config
 }
 
+func (u *userServiceImpl) FineAddressById(ctx context.Context, addressId uint) (model.AddressResponseModel, error) {
+	address, err := u.UserRepository.FineAddressById(ctx, addressId)
+	if err != nil {
+		return model.AddressResponseModel{}, err
+	}
+	addressModel := model.AddressResponseModel{
+		Id:          address.ID,
+		Longitude:   common.ToFloat64(address.Longitude),
+		Latitude:    common.ToFloat64(address.Latitude),
+		PlaceId:     address.PlaceId,
+		Description: address.Description,
+		CountryCode: address.CountryCode,
+	}
+	return addressModel, nil
+}
+
 func (u *userServiceImpl) FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) entity.User {
 	userResult, err := u.UserRepository.FindByEmailOrPhone(ctx, userModel)
 	if err != nil {
@@ -47,14 +63,27 @@ func (u *userServiceImpl) GetAddresses(ctx context.Context, id uint) (interface{
 	return addresses, nil
 }
 
-func (u *userServiceImpl) SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error) {
-	if request.Longitude == 0 || request.Latitude == 0 {
-		locationGeometryResult := u.LocalGovernmentService.GetPlaceDetail(ctx, request.PlaceId)
-		request.Longitude = locationGeometryResult.Result.Geometry.Location.Lng
-		request.Latitude = locationGeometryResult.Result.Geometry.Location.Lat
+func (u *userServiceImpl) SaveAddress(ctx context.Context, request map[string]interface{}) (interface{}, error) {
+	longitude := request["longitude"].(float64)
+	latitude := request["latitude"].(float64)
+	placeId := request["place_id"].(string)
+	description := request["description"].(string)
+	countryCode := request["country_code"].(string)
+	userId := request["userId"].(uint)
+	if longitude == 0 || latitude == 0 {
+		locationGeometryResult := u.LocalGovernmentService.GetPlaceDetail(ctx, placeId)
+		longitude = locationGeometryResult.Result.Geometry.Location.Lng
+		latitude = locationGeometryResult.Result.Geometry.Location.Lat
 	}
-
-	address, err := u.UserRepository.SaveAddress(ctx, request)
+	var addressMode = map[string]interface{}{
+		"longitude":    longitude,
+		"latitude":     latitude,
+		"place_id":     placeId,
+		"description":  description,
+		"country_code": countryCode,
+		"userId":       userId,
+	}
+	address, err := u.UserRepository.SaveAddress(ctx, addressMode)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +93,7 @@ func (u *userServiceImpl) SaveAddress(ctx context.Context, request model.Address
 		Latitude:    common.ToFloat64(address.Latitude),
 		PlaceId:     address.PlaceId,
 		Description: address.Description,
+		CountryCode: address.CountryCode,
 	}
 	return addressModel, nil
 }

@@ -382,13 +382,13 @@ func (controller UserController) HandleUpdateProfile(ctx *fiber.Ctx) error {
 }
 
 // SaveAddress implements the UserService interface
-func (controller UserController) SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error) {
+func (controller UserController) SaveAddress(ctx context.Context, request map[string]interface{}) (interface{}, error) {
 	return controller.UserService.SaveAddress(ctx, request)
 }
 
 // HandleSaveAddress handles the HTTP request for saving addresses
 func (controller UserController) HandleSaveAddress(ctx *fiber.Ctx) error {
-	var request model.AddressModel
+	var request map[string]interface{}
 	err := ctx.BodyParser(&request)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(model.GeneralResponse{
@@ -417,7 +417,7 @@ func (controller UserController) HandleSaveAddress(ctx *fiber.Ctx) error {
 		})
 	}
 
-	request.UserId = uint(userId)
+	request["userId"] = uint(userId)
 
 	res, err := controller.SaveAddress(ctx.Context(), request)
 	if err != nil {

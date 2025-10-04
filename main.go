@@ -13,6 +13,7 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/middleware"
 	repository "github.com/RizkiMufrizal/gofiber-clean-architecture/repository/impl"
 	service "github.com/RizkiMufrizal/gofiber-clean-architecture/service/impl"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -42,8 +43,8 @@ func main() {
 	logger.NewLogger()
 	logger.Logger.Info("Starting the application...")
 
-	//config := configuration.New("/var/www/api/.env")
-	config := configuration.New(".env")
+	config := configuration.New("/var/www/api/.env")
+	//config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
 	redis := configuration.NewRedis(config)
@@ -52,7 +53,7 @@ func main() {
 	// Initialize Redis and RabbitMQ services
 	rabbitMQService := service.NewRabbitMQService(rabbitMQ, "aqua_wizz_exchange", "topic")
 	// Redis service initialization if needed in the future
-	// redisService := service.NewRedisService(redis)
+	redisService := service.NewRedisService(redis)
 
 	//repository
 	messageTemplateRepository := repository.NewMessageTemplateRepositoryImpl(database)
@@ -67,6 +68,7 @@ func main() {
 	paymentMethodRepository := repository.NewPaymentMethodRepository(database)
 	paymentConfigRepository := repository.NewPaymentConfigRepository(database, redis)
 	notificationRepository := repository.NewNotificationRepository(database)
+	settingRepository := repository.NewSettingRepository(database)
 
 	//rest client
 	httpRestClient := restclient.NewHttpRestClient(config)
@@ -82,7 +84,8 @@ func main() {
 	localGovernmentService := service.NewLocalGovernmentServiceImpl(&localGovernmentRepository, config)
 	userService := service.NewUserServiceImpl(&userRepository, &messageService, &localGovernmentService, config)
 	truckService := service.NewTruckServiceImpl(&truckRepository, &userService, &messageService)
-	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService, config)
+	settingService := service.NewSettingService(settingRepository, redisService, validator.New())
+	refineryService := service.NewRefineryServiceImpl(&refineryRepository, &userService, &messageService, &settingService, config)
 	paymentService := service.NewPaymentService(&paymentRepository)
 	paymentConfigService := service.NewPaymentConfigService(paymentConfigRepository)
 
@@ -102,6 +105,7 @@ func main() {
 	paymentController := controller.NewPaymentController(&paymentService, &userService, config)
 	paymentConfigController := controller.NewPaymentConfigController(paymentConfigService)
 	localGovernmentController := controller.NewLocalGovernmentAreaController(&localGovernmentService)
+	settingController := controller.NewSettingController(settingService)
 
 	// Google Maps Controller
 	mapsController := controller.NewGoogleMapsController(mapsService)
@@ -126,6 +130,8 @@ func main() {
 	localGovernmentController.Route(app)
 	// Register Google Maps endpoints
 	mapsController.RegisterRoutes(app)
+	// Register setting routes
+	settingController.Route(app)
 
 	// Payment configuration routes are registered through the controller's Route method
 

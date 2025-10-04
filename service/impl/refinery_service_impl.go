@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -20,18 +21,30 @@ type RefineryServiceImpl struct {
 	repository.RefineryRepository
 	service.UserService
 	service.MessageService
+	service.SettingService
 	configuration.Config
 }
 
-func NewRefineryServiceImpl(repository *repository.RefineryRepository, userService *service.UserService, messageService *service.MessageService, configuration configuration.Config) service.RefineryService {
-	return &RefineryServiceImpl{RefineryRepository: *repository, UserService: *userService, MessageService: *messageService, Config: configuration}
+func NewRefineryServiceImpl(repository *repository.RefineryRepository, userService *service.UserService, messageService *service.MessageService, settingService *service.SettingService, configuration configuration.Config) service.RefineryService {
+	return &RefineryServiceImpl{RefineryRepository: *repository, UserService: *userService, MessageService: *messageService, SettingService: *settingService, Config: configuration}
 }
 
 func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.GetRefineryModel) (model.RefineryCostModel, error) {
 	var basicCost float64
+	var deliverFee float64
+	var convenienceFee float64
 	refineries, err := r.RefineryRepository.ListRefinery(context)
-	var selectRefinery entity.Refinery = refineries[0]
+	var selectRefinery entity.Refinery
 	shortestDistance := 60.0
+	exception.PanicLogging(err)
+	address, err := r.UserService.FineAddressById(context, request.AddressId)
+	ghConvienienceFeeSetting, err := r.SettingService.FindByKey(context, "GH_CONVENIENCE_FEE")
+	exception.PanicLogging(err)
+	ngConvienienceFeeSetting, err := r.SettingService.FindByKey(context, "NG_CONVENIENCE_FEE")
+	exception.PanicLogging(err)
+	ghDeliveryFeePerKm, err := r.SettingService.FindByKey(context, "GH_DELIVERY_AMOUNT_PER_KM")
+	exception.PanicLogging(err)
+	ngDeliveryFeePerKm, err := r.SettingService.FindByKey(context, "NG_DELIVERY_AMOUNT_PER_KM")
 	exception.PanicLogging(err)
 	distanceResult := make(map[string]interface{})
 	// calculate route distance for each refinery
@@ -42,7 +55,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		if !refineries[i].HasDomesticWaterSupply && request.Type == "domestic" {
 			continue
 		}
-		distanceResult = r.CalculateDistance(refineries[i], request.PlaceId)
+		distanceResult = r.CalculateDistance(refineries[i], address.PlaceId)
 		if len(distanceResult) == 0 {
 			continue
 		}
@@ -55,7 +68,15 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		}
 
 	}
-
+	if selectRefinery.Country == "GH" {
+		convenienceFee, _ = common.StringToFloat(ghConvienienceFeeSetting.Value)
+		deliverFee, _ = common.StringToFloat(ghDeliveryFeePerKm.Value)
+	} else if selectRefinery.Country == "NG" {
+		convenienceFee, _ = common.StringToFloat(ngConvienienceFeeSetting.Value)
+		deliverFee, _ = common.StringToFloat(ngDeliveryFeePerKm.Value)
+	} else {
+		return model.RefineryCostModel{}, errors.New("we do not deliver to your location yet")
+	}
 	if shortestDistance > 100 {
 		return model.RefineryCostModel{}, nil
 	}
@@ -69,24 +90,24 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 
 	// calculate cost
 	TenThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 10) + (shortestDistance * 1) + (1 * 2),
+		TotalCost:   (basicCost * 10) + (shortestDistance * deliverFee) + convenienceFee,
 		WaterCost:   basicCost * 10,
 		DeliveryFee: shortestDistance * 1,
 	}
 
 	TwentyThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 20) + (shortestDistance * 1) + (2 * 2),
+		TotalCost:   (basicCost * 20) + (shortestDistance * deliverFee) + convenienceFee,
 		WaterCost:   basicCost * 20,
 		DeliveryFee: shortestDistance * 1,
 	}
 
 	ThirtyThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 30) + (shortestDistance * 1) + (3 * 2),
+		TotalCost:   (basicCost * 30) + (shortestDistance * deliverFee) + convenienceFee,
 		WaterCost:   basicCost * 30,
 		DeliveryFee: shortestDistance * 1,
 	}
 	FortyThousand := model.WaterCostModel{
-		TotalCost:   (basicCost * 40) + (shortestDistance * 1) + (4 * 2),
+		TotalCost:   (basicCost * 40) + (shortestDistance * deliverFee) + convenienceFee,
 		WaterCost:   basicCost * 40,
 		DeliveryFee: shortestDistance * 1,
 	}

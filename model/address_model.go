@@ -26,10 +26,11 @@ type AddressModel struct {
 		Offset int    `json:"offset"`
 		Value  string `json:"value"`
 	} `json:"terms"`
-	Types     []string `json:"types"`
-	UserId    uint
-	Longitude float64 `json:"longitude"`
-	Latitude  float64 `json:"latitude"`
+	Types       []string `json:"types"`
+	UserId      uint
+	Longitude   float64 `json:"longitude"`
+	Latitude    float64 `json:"latitude"`
+	CountryCode string  `json:"countryCode" validate:"required,len=2"`
 }
 
 type AddressResponseModel struct {
@@ -38,4 +39,5 @@ type AddressResponseModel struct {
 	PlaceId     string  `json:"placeId"`
 	Longitude   float64 `json:"longitude"`
 	Latitude    float64 `json:"latitude"`
+	CountryCode string  `json:"countryCode"`
 }

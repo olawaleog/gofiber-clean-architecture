@@ -20,8 +20,9 @@ type UserService interface {
 	ResetPassword(ctx context.Context, request model.UserModel) model.UserModel
 	UpdateUserPassword(ctx context.Context, request model.ResetPasswordViewModel) model.UserModel
 	UpdateProfile(ctx context.Context, request model.UserModel, token string) (model.UserModel, error)
-	SaveAddress(ctx context.Context, request model.AddressModel) (interface{}, error)
+	SaveAddress(ctx context.Context, request map[string]interface{}) (interface{}, error)
 	GetAddresses(ctx context.Context, id uint) (interface{}, error)
 	FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) entity.User
 	UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error
+	FineAddressById(ctx context.Context, addressId uint) (model.AddressResponseModel, error)
 }

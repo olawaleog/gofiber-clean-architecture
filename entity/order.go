@@ -17,7 +17,7 @@ type Order struct {
 	RefineryId      uint        `gorm:"column:refinery_id;type:int"`
 	Refinery        Refinery    `gorm:"foreignKey:RefineryId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Status          uint        `gorm:"column:status;type:int"`
-	TruckId         *uint       `gorm:"column:truck_id;type:int"`
+	TruckId         uint        `gorm:"column:truck_id;type:int"`
 	Truck           *Truck      `gorm:"foreignKey:TruckId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Capacity        string      `gorm:"column:capacity;type:text"`
 	Type            string      `gorm:"column:type;type:text"`

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 )
@@ -18,8 +19,9 @@ type UserRepository interface {
 	ResetPassword(ctx context.Context, request model.UserModel) (model.UserModel, error)
 	SetPassword(id int, password string) (model.UserModel, error)
 	UpdateProfile(ctx context.Context, request model.UserModel) (model.UserModel, error)
-	SaveAddress(ctx context.Context, request model.AddressModel) (entity.Address, error)
+	SaveAddress(ctx context.Context, request map[string]interface{}) (entity.Address, error)
 	FindAllAddress(ctx context.Context, id uint) ([]model.AddressResponseModel, error)
 	FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) (entity.User, error)
 	UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error
+	FineAddressById(ctx context.Context, id uint) (entity.Address, error)
 }

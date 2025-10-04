@@ -9,3 +9,8 @@ func ToFloat64(s string) float64 {
 	}
 	return f
 }
+
+// StringToFloat converts a string to float64, returns the converted value and any error that occurred
+func StringToFloat(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
+}
