@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"os"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client/restclient"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
@@ -38,12 +39,16 @@ var f embed.FS
 // @name Authorization
 // @description Authorization For JWT
 func main() {
+	configPath := ""
+	if len(os.Args) > 1 {
+		configPath = os.Args[1]
+	}
 	//setup configuration
 	//config := configuration.New(".env")
 	logger.NewLogger()
 	logger.Logger.Info("Starting the application...")
 
-	config := configuration.New("/var/www/api/.env")
+	config := configuration.New(configPath + ".env")
 	//config := configuration.New(".env")
 
 	database := configuration.NewDatabase(config)
