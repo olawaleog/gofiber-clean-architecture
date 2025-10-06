@@ -24,6 +24,7 @@ func (t TruckRepositoryImpl) ListTrucks(ctx context.Context) ([]model.TruckModel
 	var trucks []entity.Truck
 	err := t.DB.WithContext(ctx).
 		Preload("User").
+		Where("is_active = ?", true).
 		Find(&trucks).Error
 	exception.PanicLogging(err)
 	var truckModels []model.TruckModel
