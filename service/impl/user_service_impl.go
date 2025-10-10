@@ -68,7 +68,10 @@ func (u *userServiceImpl) SaveAddress(ctx context.Context, request map[string]in
 	latitude := request["latitude"].(float64)
 	placeId := request["place_id"].(string)
 	description := request["description"].(string)
-	countryCode := request["country_code"].(string)
+	countryCode := "GH"
+	if request["country_code"] != nil {
+		countryCode = request["country_code"].(string)
+	}
 	userId := request["userId"].(uint)
 	if longitude == 0 || latitude == 0 {
 		locationGeometryResult := u.LocalGovernmentService.GetPlaceDetail(ctx, placeId)
