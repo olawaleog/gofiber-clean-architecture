@@ -31,6 +31,7 @@ func (controller UserController) Route(app *fiber.App) {
 	app.Post("/v1/api/reset-password", controller.HandleResetPassword)
 	app.Post("/v1/api/verify-otp", controller.HandleValidateOtp)
 	app.Post("/v1/api/post-new-password", controller.HandleUpdateUserPassword)
+	app.Post("/update-fcm-token", controller.HandleUpdateFcmToken)
 
 	// Protected routes (require authentication)
 	protected := app.Group("/v1/api", middleware.ExtractClaims(controller), middleware.RequireClaims())
