@@ -331,7 +331,7 @@ func (t *transactionServiceImpl) GetDriverCompletedOrder(ctx context.Context, us
 				DeliveryFee: order.Transaction.DeliveryFee,
 				WaterCost:   order.Transaction.WaterCost,
 			},
-			DeliveryAddress: order.DeliveryAddress,
+			DeliveryAddress: order.Transaction.Address.Description,
 			DeliveryPlaceId: order.DeliveryPlaceId,
 			Status:          order.Status,
 			TransactionId:   order.TransactionId,

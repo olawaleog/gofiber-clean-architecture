@@ -119,6 +119,7 @@ func (o OrderRepositoryImpl) FindDriverOrdersByUserId(ctx context.Context, id fl
 	var orders []entity.Order
 	err = o.DB.WithContext(ctx).
 		Preload("Transaction").
+		Preload("Transaction.Address").
 		Preload("Refinery").
 		Preload("Transaction.User").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
@@ -158,6 +159,7 @@ func (o OrderRepositoryImpl) FindCompletedDriverOrdersByUserId(ctx context.Conte
 	var orders []entity.Order
 	err = o.DB.WithContext(ctx).
 		Preload("Transaction").
+		Preload("Transaction.Address").
 		Preload("Refinery").
 		Preload("Transaction.User").
 		Joins("JOIN tb_transactions ON tb_transactions.id = tb_orders.transaction_id").
