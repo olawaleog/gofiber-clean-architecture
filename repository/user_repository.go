@@ -24,4 +24,5 @@ type UserRepository interface {
 	FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) (entity.User, error)
 	UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error
 	FineAddressById(ctx context.Context, id uint) (entity.Address, error)
+	FindAllWithFcmToken(ctx context.Context) ([]entity.User, error)
 }

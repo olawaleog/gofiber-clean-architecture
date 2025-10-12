@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/common"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/configuration"
@@ -55,7 +56,7 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 		if !refineries[i].HasDomesticWaterSupply && request.Type == "domestic" {
 			continue
 		}
-		distanceResult = r.CalculateDistance(refineries[i], address.PlaceId)
+		distanceResult = r.CalculateDistance(refineries[i], address)
 		if len(distanceResult) == 0 {
 			continue
 		}
@@ -130,21 +131,24 @@ func (r RefineryServiceImpl) GetRefinery(context context.Context, request model.
 	return response, nil
 }
 
-func (r *RefineryServiceImpl) CalculateDistance(origin entity.Refinery, destinationPlaceID string) map[string]interface{} {
+func (r *RefineryServiceImpl) CalculateDistance(origin entity.Refinery, address model.AddressResponseModel) map[string]interface{} {
 	apiKey := r.Config.Get("GOOGLE_MAPS_API_KEY") // Replace with your actual API key
-	url := ""
-	if origin.PlaceId == "" {
-		url = fmt.Sprintf(
-			"https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s,%s&destinations=place_id:%s&key=%s",
-			origin.Longitude, origin.Latitude, destinationPlaceID, apiKey,
-		)
-	} else {
-		url = fmt.Sprintf(
-			"https://maps.googleapis.com/maps/api/distancematrix/json?origins=place_id:%s&destinations=place_id:%s&key=%s",
-			origin.PlaceId, destinationPlaceID, apiKey,
-		)
-	}
+	dest := fmt.Sprintf("%s,%s",
+		strconv.FormatFloat(address.Latitude, 'f', -1, 64),
+		strconv.FormatFloat(address.Longitude, 'f', -1, 64),
+	)
 
+	var url string
+	if origin.PlaceId == "" {
+		// format origin as "lat,lng" when no place_id
+		orig := fmt.Sprintf("%s,%s",
+			origin.Latitude,
+			origin.Longitude,
+		)
+		url = fmt.Sprintf("https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s&destinations=%s&key=%s", orig, dest, apiKey)
+	} else {
+		url = fmt.Sprintf("https://maps.googleapis.com/maps/api/distancematrix/json?origins=place_id:%s&destinations=%s&key=%s", origin.PlaceId, dest, apiKey)
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to call Google Maps API: %v", err))

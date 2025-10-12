@@ -72,7 +72,36 @@ func (n *notificationServiceImpl) SendToDevice(ctx context.Context, notification
 
 func (n *notificationServiceImpl) SendToMultipleDevices(ctx context.Context, notification model.NotificationModel) error {
 	if len(notification.Tokens) == 0 {
-		return fmt.Errorf("at least one device token is required")
+		return fmt.Errorf("no device tokens provided")
+	}
+
+	client, err := n.app.Messaging(ctx)
+	if err != nil {
+		fmt.Printf("Error initializing Firebase Messaging client: %v\n", err)
+		return err
+	}
+
+	message := &messaging.Message{
+		Token: notification.Tokens[0],
+		Notification: &messaging.Notification{
+			Title: notification.Title,
+			Body:  notification.Body,
+		},
+	}
+
+	_, err = client.Send(ctx, message)
+	if err != nil {
+		fmt.Printf("Error sending multicast message: %v\n", err)
+		return err
+	}
+
+	//fmt.Printf("Successfully sent %d messages, failed to send %d messages\n", response.SuccessCount, response.FailureCount)
+	return nil
+}
+
+func (n *notificationServiceImpl) SendToTopic(ctx context.Context, topic string, notification model.NotificationModel) error {
+	if topic == "" {
+		return fmt.Errorf("topic is required")
 	}
 
 	client, err := n.app.Messaging(ctx)
@@ -86,8 +115,8 @@ func (n *notificationServiceImpl) SendToMultipleDevices(ctx context.Context, not
 			Body:     notification.Body,
 			ImageURL: notification.ImageURL,
 		},
-		Tokens: notification.Tokens,
-		Data:   notification.Data,
+		//Topic: topic,
+		Data: notification.Data,
 		Android: &messaging.AndroidConfig{
 			Priority: "high",
 			Notification: &messaging.AndroidNotification{
@@ -110,49 +139,6 @@ func (n *notificationServiceImpl) SendToMultipleDevices(ctx context.Context, not
 	}
 
 	_, err = client.SendMulticast(ctx, message)
-	return err
-}
-
-func (n *notificationServiceImpl) SendToTopic(ctx context.Context, topic string, notification model.NotificationModel) error {
-	if topic == "" {
-		return fmt.Errorf("topic is required")
-	}
-
-	client, err := n.app.Messaging(ctx)
-	if err != nil {
-		return err
-	}
-
-	message := &messaging.Message{
-		Notification: &messaging.Notification{
-			Title:    notification.Title,
-			Body:     notification.Body,
-			ImageURL: notification.ImageURL,
-		},
-		Topic: topic,
-		Data:  notification.Data,
-		Android: &messaging.AndroidConfig{
-			Priority: "high",
-			Notification: &messaging.AndroidNotification{
-				ClickAction: notification.ClickAction,
-			},
-		},
-	}
-
-	if notification.ClickAction != "" {
-		message.APNS = &messaging.APNSConfig{
-			Payload: &messaging.APNSPayload{
-				Aps: &messaging.Aps{
-					Alert: &messaging.ApsAlert{
-						Title: notification.Title,
-						Body:  notification.Body,
-					},
-				},
-			},
-		}
-	}
-
-	_, err = client.Send(ctx, message)
 	return err
 }
 

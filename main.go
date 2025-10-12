@@ -115,6 +115,9 @@ func main() {
 	// Google Maps Controller
 	mapsController := controller.NewGoogleMapsController(mapsService)
 
+	// Notification Controller
+	notificationController := controller.NewNotificationController(notificationService, userRepository)
+
 	//setup fiber
 	app := fiber.New(configuration.NewFiberConfiguration())
 
@@ -137,6 +140,8 @@ func main() {
 	mapsController.RegisterRoutes(app)
 	// Register setting routes
 	settingController.Route(app)
+	// Register notification routes
+	notificationController.Route(app)
 
 	// Payment configuration routes are registered through the controller's Route method
 

@@ -423,6 +423,14 @@ func (u *userRepositoryImpl) UpdateFcmToken(ctx context.Context, request model.U
 
 	return err
 }
+func (u *userRepositoryImpl) FindAllWithFcmToken(ctx context.Context) ([]entity.User, error) {
+	var users []entity.User
+	err := u.DB.WithContext(ctx).Where("fcm_token IS NOT NULL AND fcm_token != ''").Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
 func toFloat64(value string) float64 {
 	floatValue, err := strconv.ParseFloat(value, 64)
 	if err != nil {
