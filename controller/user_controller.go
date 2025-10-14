@@ -31,7 +31,7 @@ func (controller UserController) Route(app *fiber.App) {
 	app.Post("/v1/api/reset-password", controller.HandleResetPassword)
 	app.Post("/v1/api/verify-otp", controller.HandleValidateOtp)
 	app.Post("/v1/api/post-new-password", controller.HandleUpdateUserPassword)
-	app.Post("/update-fcm-token", controller.HandleUpdateFcmToken)
+	app.Post("/v1/api/update-fcm-token", controller.HandleUpdateFcmToken)
 
 	// Protected routes (require authentication)
 	protected := app.Group("/v1/api", middleware.ExtractClaims(controller), middleware.RequireClaims())
@@ -41,7 +41,6 @@ func (controller UserController) Route(app *fiber.App) {
 	protected.Get("/get-addresses", controller.HandleGetAddresses)
 	protected.Get("/users", controller.ListUsers)
 	protected.Post("/update-profile", controller.HandleUpdateProfile)
-	protected.Post("/update-fcm-token", controller.HandleUpdateFcmToken)
 	protected.Get("/users/:id", controller.FindUserById)
 }
 
@@ -61,6 +60,7 @@ func (controller UserController) HandleRegister(c *fiber.Ctx) error {
 	} else {
 		request.CountryCode = "+233"
 	}
+	request.Role = common.CUSTOMER_ROLE
 
 	request.IsActive = false
 	user := controller.Register(c.Context(), request)

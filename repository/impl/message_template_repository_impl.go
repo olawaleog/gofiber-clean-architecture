@@ -3,13 +3,14 @@ package impl
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/entity"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/repository"
 	"gorm.io/gorm"
-	"math/rand"
-	"time"
 )
 
 func NewMessageTemplateRepositoryImpl(DB *gorm.DB) repository.MessageTemplateRepository {
