@@ -856,7 +856,7 @@ func (t *transactionServiceImpl) CloseOrder(id string) error {
 		Title:       "Order Completed",
 		Body:        "Your order has been completed successfully!",
 		Data:        map[string]string{"orderId": strconv.Itoa(int(order.ID)), "status": "order_completed"},
-		ClickAction: "OPEN_ORDER_DETAILS",
+		ClickAction: "FLUTTER_NOTIFICATION_CLICK",
 	}
 
 	ctx := context.Background()
