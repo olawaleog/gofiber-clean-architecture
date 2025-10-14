@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"os"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/client/restclient"
@@ -12,6 +13,7 @@ import (
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/middleware"
+	"github.com/RizkiMufrizal/gofiber-clean-architecture/model"
 	repository "github.com/RizkiMufrizal/gofiber-clean-architecture/repository/impl"
 	service "github.com/RizkiMufrizal/gofiber-clean-architecture/service/impl"
 	"github.com/go-playground/validator/v10"
@@ -167,6 +169,24 @@ func main() {
 	})
 	if err != nil {
 		logger.Logger.Error("Failed to subscribe to notifications topic: " + err.Error())
+	}
+
+	// Start the SMS consumer service
+	err = rabbitMQService.SubscribeToTopic("sms.send", func(message []byte) error {
+		var sms model.SMSMessageModel
+		if err := json.Unmarshal(message, &sms); err != nil {
+			logger.Logger.Error("Failed to unmarshal SMS message: " + err.Error())
+			return err
+		}
+		if err := messageService.SendSMSDirect(sms); err != nil {
+			logger.Logger.Error("Failed to send SMS: " + err.Error())
+			return err
+		}
+		logger.Logger.Info("SMS sent to: " + sms.PhoneNumber)
+		return nil
+	})
+	if err != nil {
+		logger.Logger.Error("Failed to subscribe to sms.send topic: " + err.Error())
 	}
 
 	// Properly close connections when app terminates

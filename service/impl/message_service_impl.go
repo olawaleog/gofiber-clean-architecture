@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -40,7 +41,7 @@ func (m *messageServiceImpl) GenerateOneTimePassword(context context.Context, ui
 	return otp, nil
 }
 
-func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageModel) {
+func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageModel) error {
 	// Create a queued SMS message
 	queuedSMS := model.QueuedSMSMessage{
 		PhoneNumber: data.PhoneNumber,
@@ -53,7 +54,8 @@ func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageM
 	if err != nil {
 		logger.Logger.Error(fmt.Sprintf("Failed to queue SMS to %s: %s", data.PhoneNumber, err.Error()))
 		// Fall back to synchronous sending if publishing fails
-		m.sendSMSDirect(data)
+		m.SendSMSDirect(data)
+		return err
 	} else {
 		logger.Logger.Info(fmt.Sprintf("SMS to %s queued successfully", data.PhoneNumber))
 	}
@@ -69,12 +71,15 @@ func (m *messageServiceImpl) SendSMS(ctx context.Context, data model.SMSMessageM
 
 	_, err = m.notificationRepository.Create(ctx, notification)
 	if err != nil {
+
 		logger.Logger.Error(fmt.Sprintf("Failed to save SMS notification: %s", err.Error()))
+		return err
 	}
+	return nil
 }
 
 // sendSMSDirect sends an SMS directly as a fallback mechanism
-func (m *messageServiceImpl) sendSMSDirect(data model.SMSMessageModel) {
+func (m *messageServiceImpl) SendSMSDirect(data model.SMSMessageModel) error {
 	headers := make(map[string]interface{})
 	headers["apiKey"] = m.config.Get("AFRICAS_TALKING_API_KEY")
 
@@ -84,6 +89,9 @@ func (m *messageServiceImpl) sendSMSDirect(data model.SMSMessageModel) {
 	body["message"] = data.Message
 
 	phoneNumber := data.PhoneNumber
+	if phoneNumber == "" {
+		return errors.New("invalid phone number")
+	}
 	if phoneNumber[0] == '0' {
 		phoneNumber = data.CountryCode + phoneNumber[1:]
 	} else if data.CountryCode != "" && phoneNumber[0] != '+' {
@@ -98,9 +106,11 @@ func (m *messageServiceImpl) sendSMSDirect(data model.SMSMessageModel) {
 
 	if err != nil {
 		logger.Logger.Error(fmt.Sprintf("Error sending SMS directly: %s", err.Error()))
+		return err
 	} else {
 		logger.Logger.Info(fmt.Sprintf("SMS sent directly to %s successfully!", phoneNumber))
 	}
+	return nil
 }
 
 func (m *messageServiceImpl) FindMessageTemplateById(ctx context.Context, id int) model.MessageTemplateModel {
