@@ -719,7 +719,7 @@ func (t *transactionServiceImpl) FindById(ctx context.Context, id uint) (model.O
 		Currency:        order.Currency,
 		WaterCost:       order.WaterCost,
 		DeliveryFee:     order.DeliveryFee,
-		DeliveryAddress: order.DeliveryAddress,
+		DeliveryAddress: order.Transaction.Address.Description,
 		DeliveryPlaceId: order.DeliveryPlaceId,
 		RefineryAddress: order.RefineryAddress,
 		RefineryPlaceId: order.RefineryPlaceId,
