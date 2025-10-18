@@ -95,7 +95,7 @@ func (o OrderRepositoryImpl) GetRefineryOrders(ctx context.Context, u uint, coun
 		Joins("JOIN tb_users ON tb_users.id = tb_transactions.user_id ").
 		Joins("LEFT JOIN tb_trucks ON tb_trucks.id = tb_orders.truck_id").
 		Joins(" LEFT JOIN tb_users AS truck_users ON truck_users.id = tb_trucks.user_id").
-		Order("tb_orders.status ").
+		//Order("tb_orders.status ").
 		Order("tb_orders.id desc")
 
 	// Filter by country code if provided
