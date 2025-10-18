@@ -120,6 +120,7 @@ func (controller UserController) HandleAuthentication(c *fiber.Ctx) error {
 		"phoneNumber":  result.PhoneNumber,
 		"id":           result.ID,
 		"refineryId":   result.RefineryId,
+		"countryCode":  result.CountryCode,
 	}
 	return c.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    200,

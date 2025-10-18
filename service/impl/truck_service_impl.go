@@ -30,6 +30,7 @@ func (t TruckServiceImpl) ListAllTrucks(c context.Context) ([]model.TruckModel, 
 
 func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckModel, error) {
 	yearOfmanufacture, err := strconv.Atoi(truckModel.YearOfManufacture)
+	exception.PanicLogging(err)
 	capacity, err := strconv.Atoi(truckModel.Capacity)
 	exception.PanicLogging(err)
 
@@ -44,11 +45,11 @@ func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckM
 		LastName:     truckModel.LastName,
 		PhoneNumber:  truckModel.Phone,
 		IsActive:     false,
-		CountryCode:  "+233",
+		CountryCode:  truckModel.CountryCode,
+		AreaCode:     truckModel.AreaCode,
 	}
 
 	userResult := t.UserService.Register(context.TODO(), user)
-	exception.PanicLogging(err)
 
 	truckEntity := entity.Truck{
 		ManufacturerModel:     truckModel.ManufacturerModel,
@@ -69,7 +70,8 @@ func (t TruckServiceImpl) CreateTruck(truckModel model.TruckModel) (model.TruckM
 		PhoneNumber: user.PhoneNumber,
 		CountryCode: userResult.AreaCode,
 	}
-	t.MessageService.SendSMS(context.TODO(), smsModel)
+	_ = t.MessageService.SendSMS(context.TODO(), smsModel)
+	//exception.PanicLogging(sendErr)
 
 	return truckModel, nil
 }
@@ -93,4 +95,9 @@ func (t TruckServiceImpl) GetActiveTruck(ctx context.Context) model.TruckModel {
 		},
 	}
 
+}
+
+// ListTrucksByCountryCode returns active trucks whose owner's area_code matches the provided countryCode.
+func (t TruckServiceImpl) ListTrucksByCountryCode(ctx context.Context, countryCode string) ([]model.TruckModel, error) {
+	return t.TruckRepository.ListTrucksByCountryCode(ctx, countryCode)
 }

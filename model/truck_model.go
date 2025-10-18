@@ -12,10 +12,12 @@ type TruckModel struct {
 	EngineNumber          string    `json:"engineNumber"`
 	LicenceExpirationDate time.Time `json:"licenceExpirationDate"`
 
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Phone     string    `json:"phoneNumber"`
-	Email     string    `json:"emailAddress"`
-	UserId    uint      `json:"userId"`
-	User      UserModel `json:"user"`
+	FirstName   string    `json:"firstName"`
+	LastName    string    `json:"lastName"`
+	Phone       string    `json:"phoneNumber"`
+	Email       string    `json:"emailAddress"`
+	AreaCode    string    `json:"areaCode"`
+	CountryCode string    `json:"countryCode"`
+	UserId      uint      `json:"userId"`
+	User        UserModel `json:"user"`
 }

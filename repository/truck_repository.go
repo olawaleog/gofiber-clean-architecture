@@ -11,4 +11,5 @@ type TruckRepository interface {
 	Create(truck entity.Truck) (entity.Truck, error)
 	UpdateTruck(truck model.TruckModel) (model.TruckModel, error)
 	GetActiveTruck(ctx context.Context) (entity.Truck, error)
+	ListTrucksByCountryCode(ctx context.Context, countryCode string) ([]model.TruckModel, error)
 }

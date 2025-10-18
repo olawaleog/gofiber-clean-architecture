@@ -19,6 +19,7 @@ func NewTruckController(s *service.TruckService, c configuration.Config) TruckCo
 
 func (controller TruckController) Route(app *fiber.App) {
 	app.Get("/v1/api/trucks", controller.ListAllTrucks)
+	app.Get("/v1/api/trucks/country/:country_code", controller.ListTrucksByCountryCode)
 	app.Post("/v1/api/truck", controller.CreateTruck)
 	app.Put("/v1/api/truck", controller.UpdateTruck)
 
@@ -49,4 +50,19 @@ func (controller TruckController) UpdateTruck(c *fiber.Ctx) error {
 	exception.PanicLogging(err)
 
 	return c.Status(fiber.StatusOK).JSON(truck)
+}
+
+// ListTrucksByCountryCode handles GET /v1/api/trucks/country/:country_code
+func (controller TruckController) ListTrucksByCountryCode(c *fiber.Ctx) error {
+	countryCode := c.Params("country_code")
+	if countryCode == "" {
+		countryCode = c.Query("country_code")
+	}
+	if countryCode == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "country_code required"})
+	}
+
+	trucks, err := controller.TruckService.ListTrucksByCountryCode(c.Context(), countryCode)
+	exception.PanicLogging(err)
+	return c.Status(fiber.StatusOK).JSON(trucks)
 }

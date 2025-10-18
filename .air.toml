@@ -1,0 +1,18 @@
+# .air.toml
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# build command (build current module)
+cmd = "go build -o ./tmp/aqua_wizz ."
+bin = "tmp/aqua_wizz"
+include = ["."]
+exclude = ["tmp", "vendor", ".git", "assets"]
+delay = 200
+
+[log]
+time = true
+color = true
+
+[color]
+main = "yellow"

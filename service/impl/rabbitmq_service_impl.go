@@ -2,7 +2,9 @@ package impl
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/exception"
 	"github.com/RizkiMufrizal/gofiber-clean-architecture/logger"
@@ -15,35 +17,107 @@ type RabbitMQService struct {
 	Channel      *amqp.Channel
 	ExchangeName string
 	ExchangeType string
+	mu           sync.Mutex
+	closeChan    chan *amqp.Error
+	connClose    chan *amqp.Error
 }
 
 // NewRabbitMQService creates a new RabbitMQ service
 func NewRabbitMQService(conn *amqp.Connection, exchangeName string, exchangeType string) *RabbitMQService {
-	channel, err := conn.Channel()
-	exception.PanicLogging(err)
+	if conn == nil {
+		exception.PanicLogging(errors.New("nil rabbitmq connection"))
+	}
 
-	// Declare the exchange
-	err = channel.ExchangeDeclare(
-		exchangeName, // name
-		exchangeType, // type
-		true,         // durable
-		false,        // auto-deleted
-		false,        // internal
-		false,        // no-wait
-		nil,          // arguments
-	)
-	exception.PanicLogging(err)
-
-	return &RabbitMQService{
+	s := &RabbitMQService{
 		Connection:   conn,
-		Channel:      channel,
 		ExchangeName: exchangeName,
 		ExchangeType: exchangeType,
+		closeChan:    make(chan *amqp.Error),
+		connClose:    make(chan *amqp.Error),
 	}
+
+	if err := s.ensureChannelAndExchange(); err != nil {
+		exception.PanicLogging(err)
+	}
+
+	// monitor connection close
+	go func() {
+		notify := s.Connection.NotifyClose(make(chan *amqp.Error))
+		for err := range notify {
+			if err != nil {
+				logger.Logger.Warn(fmt.Sprintf("rabbitmq connection closed: %s", err.Error()))
+			}
+			// signal and keep loop ended
+			close(s.connClose)
+			return
+		}
+	}()
+
+	return s
+}
+
+func (s *RabbitMQService) ensureChannelAndExchange() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.Connection == nil || s.Connection.IsClosed() {
+		return errors.New("rabbitmq connection is closed")
+	}
+
+	// If channel is already present and not nil, return
+	if s.Channel != nil {
+		return nil
+	}
+
+	ch, err := s.Connection.Channel()
+	if err != nil {
+		logger.Logger.Error(fmt.Sprintf("Error creating channel: %s", err.Error()))
+		return err
+	}
+
+	// Declare the exchange (idempotent)
+	err = ch.ExchangeDeclare(
+		s.ExchangeName, // name
+		s.ExchangeType, // type
+		true,           // durable
+		false,          // auto-deleted
+		false,          // internal
+		false,          // no-wait
+		nil,            // arguments
+	)
+	if err != nil {
+		_ = ch.Close()
+		logger.Logger.Error(fmt.Sprintf("Error declaring exchange: %s", err.Error()))
+		return err
+	}
+
+	s.Channel = ch
+
+	// watch channel close and clear s.Channel when closed
+	notify := s.Channel.NotifyClose(make(chan *amqp.Error))
+	go func() {
+		if e, ok := <-notify; ok && e != nil {
+			logger.Logger.Warn(fmt.Sprintf("rabbitmq channel closed: %s", e.Error()))
+		} else {
+			logger.Logger.Warn("rabbitmq channel closed")
+		}
+		s.mu.Lock()
+		// mark channel nil so next publish re-creates it
+		s.Channel = nil
+		s.mu.Unlock()
+	}()
+
+	logger.Logger.Info(fmt.Sprintf("Declared exchange and created channel: %s", s.ExchangeName))
+	return nil
 }
 
 // PublishMessage publishes a message to a specified topic (routing key)
 func (s *RabbitMQService) PublishMessage(routingKey string, message interface{}) error {
+	if err := s.ensureChannelAndExchange(); err != nil {
+		logger.Logger.Error(fmt.Sprintf("Cannot publish, ensureChannel error: %s", err.Error()))
+		return err
+	}
+
 	body, err := json.Marshal(message)
 	if err != nil {
 		logger.Logger.Error(fmt.Sprintf("Error marshaling message: %s", err.Error()))
@@ -63,6 +137,11 @@ func (s *RabbitMQService) PublishMessage(routingKey string, message interface{})
 
 	if err != nil {
 		logger.Logger.Error(fmt.Sprintf("Error publishing message: %s", err.Error()))
+		// if channel/connection closed, clear channel so next attempt recreates it
+		s.mu.Lock()
+		_ = s.Channel // attempt to leave it for Close handling, but mark nil
+		s.Channel = nil
+		s.mu.Unlock()
 		return err
 	}
 
@@ -72,6 +151,11 @@ func (s *RabbitMQService) PublishMessage(routingKey string, message interface{})
 
 // SubscribeToTopic subscribes to a topic (queue bound to exchange with routing key)
 func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byte) error) error {
+	if err := s.ensureChannelAndExchange(); err != nil {
+		logger.Logger.Error(fmt.Sprintf("Cannot subscribe, ensureChannel error: %s", err.Error()))
+		return err
+	}
+
 	// Create a queue for this subscription
 	queueName := fmt.Sprintf("%s.%s", s.ExchangeName, routingKey)
 	queue, err := s.Channel.QueueDeclare(
@@ -128,6 +212,10 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 				msg.Ack(false)
 			}
 		}
+		// When msgs channel closes, mark channel nil so it can be recreated
+		s.mu.Lock()
+		s.Channel = nil
+		s.mu.Unlock()
 	}()
 
 	logger.Logger.Info(fmt.Sprintf("Subscribed to %s with routing key %s", s.ExchangeName, routingKey))
@@ -136,14 +224,31 @@ func (s *RabbitMQService) SubscribeToTopic(routingKey string, handler func([]byt
 
 // Close closes the connection to RabbitMQ
 func (s *RabbitMQService) Close() error {
-	if err := s.Channel.Close(); err != nil {
-		return err
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var err error
+	if s.Channel != nil {
+		if e := s.Channel.Close(); e != nil {
+			err = e
+		}
+		s.Channel = nil
 	}
-	return s.Connection.Close()
+	if s.Connection != nil && !s.Connection.IsClosed() {
+		if e := s.Connection.Close(); e != nil && err == nil {
+			err = e
+		}
+	}
+	return err
 }
 
 // PublishWithHeaders publishes a message with additional headers
 func (s *RabbitMQService) PublishWithHeaders(routingKey string, message interface{}, headers amqp.Table) error {
+	if err := s.ensureChannelAndExchange(); err != nil {
+		logger.Logger.Error(fmt.Sprintf("Cannot publish with headers, ensureChannel error: %s", err.Error()))
+		return err
+	}
+
 	body, err := json.Marshal(message)
 	if err != nil {
 		logger.Logger.Error(fmt.Sprintf("Error marshaling message: %s", err.Error()))
@@ -164,6 +269,9 @@ func (s *RabbitMQService) PublishWithHeaders(routingKey string, message interfac
 
 	if err != nil {
 		logger.Logger.Error(fmt.Sprintf("Error publishing message with headers: %s", err.Error()))
+		s.mu.Lock()
+		s.Channel = nil
+		s.mu.Unlock()
 		return err
 	}
 
@@ -173,6 +281,10 @@ func (s *RabbitMQService) PublishWithHeaders(routingKey string, message interfac
 
 // CreateQueue creates a new queue
 func (s *RabbitMQService) CreateQueue(queueName string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error) {
+	if err := s.ensureChannelAndExchange(); err != nil {
+		return amqp.Queue{}, err
+	}
+
 	queue, err := s.Channel.QueueDeclare(
 		queueName,  // name
 		durable,    // durable
@@ -192,6 +304,10 @@ func (s *RabbitMQService) CreateQueue(queueName string, durable, autoDelete, exc
 
 // BindQueueToExchange binds a queue to an exchange with a routing key
 func (s *RabbitMQService) BindQueueToExchange(queueName, routingKey, exchangeName string) error {
+	if err := s.ensureChannelAndExchange(); err != nil {
+		return err
+	}
+
 	err := s.Channel.QueueBind(
 		queueName,    // queue name
 		routingKey,   // routing key

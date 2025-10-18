@@ -180,7 +180,7 @@ func main() {
 		}
 		if err := messageService.SendSMSDirect(sms); err != nil {
 			logger.Logger.Error("Failed to send SMS: " + err.Error())
-			return err
+			return nil
 		}
 		logger.Logger.Info("SMS sent to: " + sms.PhoneNumber)
 		return nil
