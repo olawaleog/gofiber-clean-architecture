@@ -103,11 +103,6 @@ func (t TruckRepositoryImpl) ListTrucksByCountryCode(ctx context.Context, countr
 			Where("tb_trucks.is_active = ? AND tb_users.country_code = ?", true, countryCode).
 			Find(&trucks).Error
 	}
-	err = t.DB.WithContext(ctx).
-		Preload("User").
-		Joins("JOIN tb_users ON tb_users.id = tb_trucks.user_id").
-		Where("tb_trucks.is_active = ? AND tb_users.country_code = ?", true, countryCode).
-		Find(&trucks).Error
 	exception.PanicLogging(err)
 
 	var truckModels []model.TruckModel
