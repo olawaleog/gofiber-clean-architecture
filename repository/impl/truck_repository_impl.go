@@ -89,7 +89,21 @@ func (t TruckRepositoryImpl) GetActiveTruck(ctx context.Context) (entity.Truck, 
 // ListTrucksByCountryCode returns active trucks whose owner's area_code matches the provided countryCode.
 func (t TruckRepositoryImpl) ListTrucksByCountryCode(ctx context.Context, countryCode string) ([]model.TruckModel, error) {
 	var trucks []entity.Truck
-	err := t.DB.WithContext(ctx).
+	var err error
+	if countryCode == "All" {
+		err = t.DB.WithContext(ctx).
+			Preload("User").
+			Joins("JOIN tb_users ON tb_users.id = tb_trucks.user_id").
+			Where("tb_trucks.is_active = ? ", true).
+			Find(&trucks).Error
+	} else {
+		err = t.DB.WithContext(ctx).
+			Preload("User").
+			Joins("JOIN tb_users ON tb_users.id = tb_trucks.user_id").
+			Where("tb_trucks.is_active = ? AND tb_users.country_code = ?", true, countryCode).
+			Find(&trucks).Error
+	}
+	err = t.DB.WithContext(ctx).
 		Preload("User").
 		Joins("JOIN tb_users ON tb_users.id = tb_trucks.user_id").
 		Where("tb_trucks.is_active = ? AND tb_users.country_code = ?", true, countryCode).
