@@ -63,7 +63,7 @@ func (g *googleMapsService) signURL(rawURL string) (string, error) {
 }
 
 func (g *googleMapsService) SuggestPlaces(ctx context.Context, input string) ([]model.PlaceSuggestion, error) {
-	urlStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/autocomplete/json?input=%s&key=%s&components=country:gh|country:ng&radius=1000000&types=geocode", input, g.apiKey)
+	urlStr := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/autocomplete/json?input=%s&key=%s&components=country:gh|country:ng&radius=1000000", input, g.apiKey)
 	signedURL, err := g.signURL(urlStr)
 	if err != nil {
 		return nil, err
