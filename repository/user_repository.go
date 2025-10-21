@@ -25,4 +25,5 @@ type UserRepository interface {
 	UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error
 	FineAddressById(ctx context.Context, id uint) (entity.Address, error)
 	FindAllWithFcmToken(ctx context.Context) ([]entity.User, error)
+	Update(ctx context.Context, user entity.User) (entity.User, error)
 }

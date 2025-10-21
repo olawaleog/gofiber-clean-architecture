@@ -25,4 +25,5 @@ type UserService interface {
 	FindByEmailOrPhone(ctx context.Context, userModel model.UserModel) entity.User
 	UpdateFcmToken(ctx context.Context, request model.UpdateFcmToken) error
 	FineAddressById(ctx context.Context, addressId uint) (model.AddressResponseModel, error)
+	VerifyEmail(ctx context.Context, request model.OtpModel) error
 }

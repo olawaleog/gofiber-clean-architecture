@@ -26,6 +26,13 @@ type userRepositoryImpl struct {
 	*gorm.DB
 }
 
+func (u userRepositoryImpl) Update(ctx context.Context, userData entity.User) (entity.User, error) {
+	err := u.DB.WithContext(ctx).Updates(userData).Error
+	if err != nil {
+		return userData, err
+	}
+	return userData, nil
+}
 func (u *userRepositoryImpl) FineAddressById(ctx context.Context, id uint) (entity.Address, error) {
 	var address entity.Address
 	err := u.DB.WithContext(ctx).Where("id = ?", id).First(&address).Error
@@ -133,6 +140,7 @@ func (u *userRepositoryImpl) UpdateProfile(ctx context.Context, request model.Us
 	user.LastName = request.LastName
 	user.Region = request.Region
 	user.CountryCode = request.CountryCode
+
 	err = u.DB.WithContext(ctx).Updates(user).Error
 	if err != nil {
 		return model.UserModel{}, fmt.Errorf("failed to update user profile: %w", err)
@@ -275,18 +283,19 @@ func (u *userRepositoryImpl) Create(model model.UserModel) (entity.User, error) 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(model.Password), bcrypt.DefaultCost)
 	exception.PanicLogging(err)
 	user = entity.User{
-		Username:    model.PhoneNumber,
-		Password:    string(hashedPassword),
-		IsActive:    model.IsActive,
-		FirstName:   model.FirstName,
-		LastName:    model.LastName,
-		Email:       model.EmailAddress,
-		UserRole:    model.Role,
-		PhoneNumber: model.PhoneNumber,
-		FileName:    model.FileName,
-		RefineryId:  model.RefineryId,
-		AreaCode:    model.AreaCode,
-		CountryCode: model.CountryCode,
+		Username:       model.PhoneNumber,
+		Password:       string(hashedPassword),
+		IsActive:       model.IsActive,
+		FirstName:      model.FirstName,
+		LastName:       model.LastName,
+		Email:          model.EmailAddress,
+		UserRole:       model.Role,
+		PhoneNumber:    model.PhoneNumber,
+		FileName:       model.FileName,
+		RefineryId:     model.RefineryId,
+		AreaCode:       model.AreaCode,
+		CountryCode:    model.CountryCode,
+		EmailValidated: false,
 	}
 	var addresses []entity.Address
 
