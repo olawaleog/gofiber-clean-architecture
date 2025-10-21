@@ -33,6 +33,24 @@ type userServiceImpl struct {
 	Config configuration.Config
 }
 
+func (u *userServiceImpl) VerifyEmail(ctx context.Context, request model.OtpModel) error {
+	_, err := u.UserRepository.ValidateOtp(ctx, request)
+	if err != nil {
+		return err
+	}
+	var user entity.User
+	user, err = u.UserRepository.FindById(ctx, int(request.UserId))
+	if err != nil {
+		return err
+	}
+	user.EmailValidated = true
+	_, err = u.UserRepository.Update(ctx, user)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (u *userServiceImpl) FineAddressById(ctx context.Context, addressId uint) (model.AddressResponseModel, error) {
 	address, err := u.UserRepository.FineAddressById(ctx, addressId)
 	if err != nil {
@@ -252,6 +270,11 @@ func (u *userServiceImpl) Authentication(ctx context.Context, model model.LoginM
 			Message: "User is not active",
 		})
 	}
+	if userResult.EmailValidated != true {
+		panic(exception.UnauthorizedError{
+			Message: "User has not been verified",
+		})
+	}
 	return userResult
 }
 
@@ -285,7 +308,7 @@ func (u *userServiceImpl) Register(ctx context.Context, userModel model.UserMode
 }
 
 func (u *userServiceImpl) RegisterCustomer(ctx context.Context, userModel model.UserModel) interface{} {
-	userModel.IsActive = true
+	userModel.IsActive = false
 	userModel.Role = "customer"
 	user, err := u.UserRepository.Create(userModel)
 	exception.PanicLogging(err)
