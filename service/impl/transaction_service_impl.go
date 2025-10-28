@@ -468,6 +468,8 @@ func (t *transactionServiceImpl) GetRefineryOrders(ctx context.Context, u uint, 
 			TransactionId:   order.TransactionId,
 			TruckId:         order.TruckId,
 			CreatedAt:       order.CreatedAt,
+			Rating:          order.Rating,
+			Review:          order.Review,
 		})
 	}
 

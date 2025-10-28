@@ -24,4 +24,6 @@ type OrderModel struct {
 	DeliveryPlaceId string           `json:"deliveryPlaceId"`
 	RefineryPlaceId string           `json:"refineryPlaceId"`
 	Type            string           `json:"type"`
+	Review          string           `json:"review"`
+	Rating          uint             `json:"rating"`
 }
