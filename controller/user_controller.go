@@ -92,6 +92,7 @@ func (controller UserController) HandleRegisterCustomer(c *fiber.Ctx) error {
 		Code:    200,
 		Message: "User created successfully",
 		Data:    user,
+		Success: true,
 	})
 }
 

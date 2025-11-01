@@ -216,12 +216,12 @@ func (u *userRepositoryImpl) ValidateOtp(ctx context.Context, request model.OtpM
 		return otp, errors.New("OTP expired")
 	}
 	if otp.Code != request.Code {
-		return otp, errors.New("Invalid OTP code")
+		return otp, errors.New("invalid OTP code")
 	}
 	otp.IsUsed = true
 	err = u.DB.Save(&otp).Error
 	if err != nil {
-		return otp, errors.New("Failed to update OTP status")
+		return otp, errors.New("failed to update OTP status")
 	}
 
 	return otp, nil
