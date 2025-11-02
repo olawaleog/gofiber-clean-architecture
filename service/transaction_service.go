@@ -26,4 +26,6 @@ type TransactionService interface {
 	GetDriverCompletedOrder(ctx context.Context, id float64, i uint) []model.OrderModel
 	CloseOrder(id string) error
 	SubmitRating(ctx context.Context, ratingModel model.RatingModel) error
+	// GetOrderRating returns the review and rating for a specific order
+	GetOrderRating(ctx context.Context, orderId uint) (model.RatingModel, error)
 }

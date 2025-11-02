@@ -61,6 +61,8 @@ func (c TransactionController) Route(app *fiber.App) {
 	protected.Get("/close-order/:id", c.CloseOrder)
 	protected.Get("/order/:id", c.FindById)
 	protected.Post("/submit-rating", c.SubmitRating)
+	// Get rating for a specific order
+	protected.Get("/order/:id/rating", c.GetOrderRating)
 }
 
 func (c TransactionController) InitiateMobileMoneyPayment(ctx *fiber.Ctx) error {
@@ -268,6 +270,21 @@ func (c TransactionController) FindById(ctx *fiber.Ctx) error {
 		Data:    order,
 		Success: true,
 	})
+}
+
+func (c TransactionController) GetOrderRating(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+	parsedId, err := strconv.Atoi(id)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(c.responseBuilder.Error(fiber.StatusBadRequest, "Invalid order id"))
+	}
+
+	rating, err := c.TransactionService.GetOrderRating(ctx.Context(), uint(parsedId))
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(c.responseBuilder.Error(fiber.StatusInternalServerError, err.Error()))
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(c.responseBuilder.Success(rating, "Order rating retrieved successfully"))
 }
 
 func (c TransactionController) ProcessRecurringPayment(ctx *fiber.Ctx) error {

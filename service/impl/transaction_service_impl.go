@@ -896,6 +896,32 @@ func (t *transactionServiceImpl) SubmitRating(ctx context.Context, ratingModel m
 	return nil
 }
 
+// GetOrderRating returns the rating and review for a given order id
+func (t *transactionServiceImpl) GetOrderRating(ctx context.Context, orderId uint) (model.RatingModel, error) {
+	var rating model.RatingModel
+	if orderId == 0 {
+		return rating, errors.New("order ID is required")
+	}
+
+	order, err := t.OrderRepository.FindById(ctx, orderId)
+	if err != nil {
+		return rating, err
+	}
+
+	if order.ID == 0 {
+		return rating, errors.New("order not found")
+	}
+
+	rating = model.RatingModel{
+		Review:  order.Review,
+		Rating:  order.Rating,
+		UserId:  order.Transaction.UserId,
+		OrderId: order.ID,
+	}
+
+	return rating, nil
+}
+
 // GetTransactionsByCountryCode returns transactions filtered by country code or all if code is empty
 func (t *transactionServiceImpl) GetTransactionsByCountryCode(ctx context.Context, countryCode string, page, limit int) ([]model.TransactionModel, int64) {
 	transactions, totalCount := t.TransactionRepository.FindByCountryCode(ctx, countryCode, page, limit)
