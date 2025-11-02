@@ -193,11 +193,11 @@ func main() {
 	defer func() {
 		rabbitMQService.Close()
 	}()
-	//err = messageService.SendSMSDirect(model.SMSMessageModel{
-	//	CountryCode: "+233",
-	//	PhoneNumber: "0243101864",
-	//	Message:     "Hello world",
-	//})
+	err = messageService.SendSMSDirect(model.SMSMessageModel{
+		CountryCode: "+234",
+		PhoneNumber: "08080225586",
+		Message:     "Hello world",
+	})
 	//start app
 	logger.Logger.Info("Application Started")
 
