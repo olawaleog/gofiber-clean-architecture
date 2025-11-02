@@ -9,7 +9,7 @@ type EmailMessageModel struct {
 }
 
 type SMSMessageModel struct {
-	PhoneNumber string `json:"phoneNumber"`
+	PhoneNumber string `json:"phone_number" json:"phoneNumber"`
 	Message     string `json:"message"`
-	CountryCode string `json:"countryCode"`
+	CountryCode string `json:"country_code" json:"countryCode"`
 }

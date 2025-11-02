@@ -23,7 +23,7 @@ type httpBinServiceImpl struct {
 //}
 
 func (h *httpBinServiceImpl) PostMethod(ctx context.Context, url string, method string, body *map[string]interface{}, header *map[string]interface{}, isForm bool) (map[string]interface{}, error) {
-
+	common.NewLogger().Info("request service ", body)
 	response, err := h.HttpClient.Send(ctx, url, method, body, header, isForm)
 	common.NewLogger().Info("log response service ", response)
 	return response, err

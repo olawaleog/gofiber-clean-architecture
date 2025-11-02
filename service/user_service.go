@@ -16,7 +16,7 @@ type UserService interface {
 	List(ctx context.Context) ([]entity.User, error)
 	FindByID(ctx context.Context, id int) (model.UserModel, error)
 	RegisterCustomer(ctx context.Context, request model.UserModel) interface{}
-	ValidateOtp(ctx context.Context, request model.OtpModel) entity.OneTimePassword
+	ValidatePhoneNumber(ctx context.Context, request model.OtpModel) entity.OneTimePassword
 	ResetPassword(ctx context.Context, request model.UserModel) model.UserModel
 	UpdateUserPassword(ctx context.Context, request model.ResetPasswordViewModel) model.UserModel
 	UpdateProfile(ctx context.Context, request model.UserModel, token string) (model.UserModel, error)

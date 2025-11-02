@@ -188,8 +188,24 @@ func (u *userServiceImpl) ResetPassword(ctx context.Context, request model.UserM
 	return userResult
 }
 
-func (u *userServiceImpl) ValidateOtp(ctx context.Context, request model.OtpModel) entity.OneTimePassword {
+func (u *userServiceImpl) ValidatePhoneNumber(ctx context.Context, request model.OtpModel) entity.OneTimePassword {
 	otp, err := u.UserRepository.ValidateOtp(ctx, request)
+
+	if err != nil {
+		panic(exception.BadRequestError{
+			Message: "Invalid OTP",
+		})
+	}
+	var user entity.User
+	user, err = u.UserRepository.FindById(ctx, int(otp.UserId))
+	if err != nil {
+		panic(exception.BadRequestError{
+			Message: "Invalid OTP",
+		})
+	}
+	user.IsActive = true
+	user.EmailValidated = true
+	_, err = u.UserRepository.Update(ctx, user)
 	if err != nil {
 		panic(exception.BadRequestError{
 			Message: "Invalid OTP",
@@ -324,7 +340,7 @@ func (u *userServiceImpl) RegisterCustomer(ctx context.Context, userModel model.
 		CountryCode: user.AreaCode,
 	}
 	user.Password = ""
-	u.MessageService.SendSMS(ctx, emailMessageModel)
+	err = u.MessageService.SendSMS(ctx, emailMessageModel)
 	userModel = model.UserModel{
 		Id:           user.ID,
 		FirstName:    user.FirstName,

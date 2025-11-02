@@ -29,7 +29,7 @@ func (controller UserController) Route(app *fiber.App) {
 	app.Post("/v1/api/register", controller.HandleRegister)
 	app.Post("/v1/api/register-customer", controller.HandleRegisterCustomer)
 	app.Post("/v1/api/reset-password", controller.HandleResetPassword)
-	app.Post("/v1/api/verify-otp", controller.HandleValidateOtp)
+	app.Post("/v1/api/verify-phone", controller.HandleValidatePhoneNumber)
 	app.Post("/v1/api/verify-email", controller.HandleVerifyEmail)
 	app.Post("/v1/api/post-new-password", controller.HandleUpdateUserPassword)
 	app.Post("/v1/api/update-fcm-token", controller.HandleUpdateFcmToken)
@@ -259,17 +259,17 @@ func (controller UserController) FindUserById(c *fiber.Ctx) error {
 }
 
 // ValidateOtp implements the UserService interface
-func (controller UserController) ValidateOtp(ctx context.Context, request model.OtpModel) entity.OneTimePassword {
-	return controller.UserService.ValidateOtp(ctx, request)
+func (controller UserController) ValidatePhoneNumber(ctx context.Context, request model.OtpModel) entity.OneTimePassword {
+	return controller.UserService.ValidatePhoneNumber(ctx, request)
 }
 
-// HandleValidateOtp handles the HTTP request for OTP validation
-func (controller UserController) HandleValidateOtp(ctx *fiber.Ctx) error {
+// HandleValidatePhoneNumber handles the HTTP request for OTP validation
+func (controller UserController) HandleValidatePhoneNumber(ctx *fiber.Ctx) error {
 	var request model.OtpModel
 	err := ctx.BodyParser(&request)
 	exception.PanicLogging(err)
 
-	otp := controller.ValidateOtp(ctx.Context(), request)
+	otp := controller.ValidatePhoneNumber(ctx.Context(), request)
 	return ctx.Status(fiber.StatusOK).JSON(model.GeneralResponse{
 		Code:    200,
 		Message: "Success",
@@ -277,7 +277,7 @@ func (controller UserController) HandleValidateOtp(ctx *fiber.Ctx) error {
 	})
 }
 
-// HandleValidateOtp handles the HTTP request for OTP validation
+// HandleValidatePhoneNumber handles the HTTP request for OTP validation
 func (controller UserController) HandleVerifyEmail(ctx *fiber.Ctx) error {
 	var request model.OtpModel
 	err := ctx.BodyParser(&request)
