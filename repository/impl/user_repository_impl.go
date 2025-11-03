@@ -167,6 +167,7 @@ func (u *userRepositoryImpl) SetPassword(id int, password string) (model.UserMod
 	exception.PanicLogging(err)
 	user.Password = string(hashedPassword)
 	user.IsActive = true
+	user.EmailValidated = true
 
 	err = u.DB.Save(&user).Error
 	exception.PanicLogging(err)
@@ -195,11 +196,13 @@ func (u *userRepositoryImpl) ResetPassword(ctx context.Context, request model.Us
 		return model.UserModel{}, errors.New("user not found")
 	}
 	return model.UserModel{
-		Id:        user.ID,
-		Username:  user.Username,
-		Password:  user.Password,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
+		Id:          user.ID,
+		Username:    user.Username,
+		Password:    user.Password,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		CountryCode: user.CountryCode,
+		AreaCode:    user.AreaCode,
 	}, nil
 }
 

@@ -52,6 +52,7 @@ func isPublicRoute(path string) bool {
 		"/v1/api/post-new-password",
 		"/v1/api/verify-phone",
 		"/v1/api/update-fcm-token",
+		"/v1/api/user/reset-password",
 		"/swagger",
 	}
 
